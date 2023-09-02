@@ -19,7 +19,7 @@ async fn main() {
         .route("/", post(receive_message));
 
     // run it
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+    let addr: SocketAddr = "0.0.0.0:3000".parse().unwrap();
     println!("listening on {}", addr);
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
