@@ -31,23 +31,26 @@ async fn welcome() -> &'static str {
     "<h1>Welcome!</h1>"
 }
 
-async fn receive_message(Json(payload): Json<TelegramRequest>) -> Json<TelegramResponse> {
-    let message = payload.message().unwrap();
+async fn receive_message(Json(payload): Json<TelegramRequest>) -> Json<Option<TelegramResponse>> {
+    if let Some(message) = payload.message() {
+        if let Some(message_text) = message.text.as_ref() {
+            let text = match message_text.as_str() {
+                "/start" => "Welcome!".to_string(),
+                "/now utc" => Utc::now().format("%H:%M:%S").to_string(),
+                "/now europe" => format_time(Utc::now().with_timezone(&Madrid)),
+                "/now brazil" => format_time(Utc::now().with_timezone(&Sao_Paulo)),
+                "/now romania" => format_time(Utc::now().with_timezone(&Bucharest)),
+                text => parse_time(text),
+            };
 
-    let text = match message.text.as_str() {
-        "/start" => "Welcome!".to_string(),
-        "/now utc" => Utc::now().format("%H:%M:%S").to_string(),
-        "/now europe" => format_time(Utc::now().with_timezone(&Madrid)),
-        "/now brazil" => format_time(Utc::now().with_timezone(&Sao_Paulo)),
-        "/now romania" => format_time(Utc::now().with_timezone(&Bucharest)),
-        text => parse_time(text),
-    };
-
-    Json(TelegramResponse {
-        method: "sendMessage".to_string(),
-        chat_id: message.chat.id,
-        text,
-    })
+            return Json(Some(TelegramResponse {
+                method: "sendMessage".to_string(),
+                chat_id: message.chat.id,
+                text,
+            }));
+        }
+    }
+    return Json(None);
 }
 
 fn parse_time(text: &str) -> String {

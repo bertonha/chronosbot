@@ -19,32 +19,35 @@ impl TelegramRequest {
 
 #[derive(Deserialize)]
 pub struct MessagePayload {
-    pub message_id: u64,
+    pub message_id: i64,
     pub from: UserPayload,
     pub chat: ChatPayload,
     pub date: u64,
-    pub text: String,
+    pub text: Option<String>,
+    pub new_chat_members: Option<Vec<UserPayload>>,
     pub entities: Option<Vec<EntityPayload>>,
 }
 
 #[derive(Deserialize)]
 pub struct UserPayload {
-    pub id: u64,
+    pub id: i64,
     pub is_bot: bool,
     pub first_name: String,
-    pub last_name: String,
+    pub last_name: Option<String>,
     pub username: String,
-    pub language_code: String,
+    pub language_code: Option<String>,
 }
 
 #[derive(Deserialize)]
 pub struct ChatPayload {
-    pub id: u64,
-    pub first_name: String,
-    pub last_name: String,
-    pub username: String,
+    pub id: i64,
+    pub first_name: Option<String>,
+    pub last_name: Option<String>,
+    pub username: Option<String>,
     #[serde(alias = "type")]
     pub type_: String,
+    pub title: Option<String>,
+    pub all_members_are_administrators: Option<bool>,
 }
 
 #[derive(Deserialize)]
@@ -58,6 +61,6 @@ pub struct EntityPayload {
 #[derive(Serialize)]
 pub struct TelegramResponse {
     pub method: String,
-    pub chat_id: u64,
+    pub chat_id: i64,
     pub text: String,
 }
