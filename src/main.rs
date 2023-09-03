@@ -1,14 +1,13 @@
 mod telegram;
+mod time;
 
 use crate::telegram::{TelegramRequest, TelegramResponse};
+use crate::time::{format_time, parse_tz};
 use axum::{
     routing::{get, post},
     Json, Router,
 };
-use chrono::{DateTime, NaiveTime, Utc};
-use chrono_tz::America::Sao_Paulo;
-use chrono_tz::Europe::{Bucharest, Madrid};
-use chrono_tz::Tz;
+use chrono::{NaiveTime, Utc};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
@@ -65,24 +64,33 @@ async fn receive_message(Json(payload): Json<TelegramRequest>) -> Json<Option<Te
     Json(response)
 }
 
+fn process_command(text: &str) -> String {
+    if let Some((command, rest)) = text.split_once(' ') {
+        match command {
+            "/start" => start(),
+            "/now" => now(rest),
+            _ => parse_time(text),
+        }
+    } else {
+        "Invalid command".to_string()
+    }
+}
+
+fn start() -> String {
+    "Welcome!".to_string()
+}
+
+fn now(timezone: &str) -> String {
+    let tz = match parse_tz(timezone) {
+        Some(tz) => tz,
+        None => return format!("Invalid timezone: {timezone}").to_string(),
+    };
+    format_time(Utc::now().with_timezone(&tz))
+}
+
 fn parse_time(text: &str) -> String {
     match NaiveTime::parse_from_str(text, "%H:%M:%S") {
         Ok(time) => time.to_string(),
         Err(_) => format!("Invalid time format: {text}").to_string(),
-    }
-}
-
-fn format_time(time: DateTime<Tz>) -> String {
-    time.format("%H:%M:%S").to_string()
-}
-
-fn process_command(text: &str) -> String {
-    match text {
-        "/start" => "Welcome!".to_string(),
-        "/now utc" => Utc::now().format("%H:%M:%S").to_string(),
-        "/now europe" => format_time(Utc::now().with_timezone(&Madrid)),
-        "/now brazil" => format_time(Utc::now().with_timezone(&Sao_Paulo)),
-        "/now romania" => format_time(Utc::now().with_timezone(&Bucharest)),
-        text => parse_time(text),
     }
 }
