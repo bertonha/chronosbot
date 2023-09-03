@@ -9,18 +9,20 @@ use chrono::{DateTime, NaiveTime, Utc};
 use chrono_tz::America::Sao_Paulo;
 use chrono_tz::Europe::{Bucharest, Madrid};
 use chrono_tz::Tz;
-use std::net::SocketAddr;
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
 async fn main() {
-    // build our application with a route
+    tracing_subscriber::registry()
+        .with(tracing_subscriber::fmt::layer())
+        .init();
+
     let app = Router::new()
         .route("/", get(welcome))
         .route("/", post(receive_message));
 
-    // run it
-    let addr: SocketAddr = "0.0.0.0:3000".parse().unwrap();
-    println!("listening on {}", addr);
+    let addr = "0.0.0.0:3000".parse().unwrap();
+    tracing::debug!("listening on {}", addr);
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
         .await
@@ -34,7 +36,7 @@ async fn welcome() -> &'static str {
 async fn receive_message(Json(payload): Json<TelegramRequest>) -> Json<Option<TelegramResponse>> {
     let response;
 
-    if let Some(message) =  payload.message {
+    if let Some(message) = payload.message {
         if message.text.is_none() {
             return Json(None);
         }
@@ -45,7 +47,6 @@ async fn receive_message(Json(payload): Json<TelegramRequest>) -> Json<Option<Te
             message_id: None,
             text: Some(process_command(&message.text.unwrap())),
         });
-
     } else if let Some(edited_message) = payload.edited_message {
         if edited_message.text.is_none() {
             return Json(None);
@@ -74,7 +75,6 @@ fn parse_time(text: &str) -> String {
 fn format_time(time: DateTime<Tz>) -> String {
     time.format("%H:%M:%S").to_string()
 }
-
 
 fn process_command(text: &str) -> String {
     match text {

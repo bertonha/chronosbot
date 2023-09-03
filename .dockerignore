@@ -13,6 +13,7 @@
 **/.git
 **/.gitignore
 **/.project
+**/.pre-commit-config.yaml
 **/.settings
 **/.toolstarget
 **/.vs
