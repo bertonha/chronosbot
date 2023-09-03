@@ -32,25 +32,36 @@ async fn welcome() -> &'static str {
 }
 
 async fn receive_message(Json(payload): Json<TelegramRequest>) -> Json<Option<TelegramResponse>> {
-    if let Some(message) = payload.message() {
-        if let Some(message_text) = message.text.as_ref() {
-            let text = match message_text.as_str() {
-                "/start" => "Welcome!".to_string(),
-                "/now utc" => Utc::now().format("%H:%M:%S").to_string(),
-                "/now europe" => format_time(Utc::now().with_timezone(&Madrid)),
-                "/now brazil" => format_time(Utc::now().with_timezone(&Sao_Paulo)),
-                "/now romania" => format_time(Utc::now().with_timezone(&Bucharest)),
-                text => parse_time(text),
-            };
+    let response;
 
-            return Json(Some(TelegramResponse {
-                method: "sendMessage".to_string(),
-                chat_id: message.chat.id,
-                text,
-            }));
+    if let Some(message) =  payload.message {
+        if message.text.is_none() {
+            return Json(None);
         }
+
+        response = Some(TelegramResponse {
+            method: "sendMessage".to_string(),
+            chat_id: message.chat.id,
+            message_id: None,
+            text: Some(process_command(&message.text.unwrap())),
+        });
+
+    } else if let Some(edited_message) = payload.edited_message {
+        if edited_message.text.is_none() {
+            return Json(None);
+        }
+
+        response = Some(TelegramResponse {
+            method: "editMessageText".to_string(),
+            chat_id: edited_message.chat.id,
+            message_id: Some(edited_message.message_id + 1),
+            text: Some(process_command(&edited_message.text.unwrap())),
+        });
+    } else {
+        return Json(None);
     }
-    return Json(None);
+
+    Json(response)
 }
 
 fn parse_time(text: &str) -> String {
@@ -62,4 +73,16 @@ fn parse_time(text: &str) -> String {
 
 fn format_time(time: DateTime<Tz>) -> String {
     time.format("%H:%M:%S").to_string()
+}
+
+
+fn process_command(text: &str) -> String {
+    match text {
+        "/start" => "Welcome!".to_string(),
+        "/now utc" => Utc::now().format("%H:%M:%S").to_string(),
+        "/now europe" => format_time(Utc::now().with_timezone(&Madrid)),
+        "/now brazil" => format_time(Utc::now().with_timezone(&Sao_Paulo)),
+        "/now romania" => format_time(Utc::now().with_timezone(&Bucharest)),
+        text => parse_time(text),
+    }
 }

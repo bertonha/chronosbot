@@ -3,33 +3,24 @@ use serde::{Deserialize, Serialize};
 #[derive(Deserialize)]
 pub struct TelegramRequest {
     pub update_id: u64,
-    pub message: Option<MessagePayload>,
-    pub edited_message: Option<MessagePayload>,
-}
-
-impl TelegramRequest {
-    pub fn message(&self) -> Option<&MessagePayload> {
-        if self.edited_message.is_some() {
-            self.edited_message.as_ref()
-        } else {
-            self.message.as_ref()
-        }
-    }
+    pub message: Option<Message>,
+    pub edited_message: Option<Message>,
+    pub inline_query: Option<InlineQuery>,
 }
 
 #[derive(Deserialize)]
-pub struct MessagePayload {
+pub struct Message {
     pub message_id: i64,
-    pub from: UserPayload,
-    pub chat: ChatPayload,
+    pub from: User,
+    pub chat: Chat,
     pub date: u64,
     pub text: Option<String>,
-    pub new_chat_members: Option<Vec<UserPayload>>,
-    pub entities: Option<Vec<EntityPayload>>,
+    pub new_chat_members: Option<Vec<User>>,
+    pub entities: Option<Vec<Entity>>,
 }
 
 #[derive(Deserialize)]
-pub struct UserPayload {
+pub struct User {
     pub id: i64,
     pub is_bot: bool,
     pub first_name: String,
@@ -39,7 +30,7 @@ pub struct UserPayload {
 }
 
 #[derive(Deserialize)]
-pub struct ChatPayload {
+pub struct Chat {
     pub id: i64,
     pub first_name: Option<String>,
     pub last_name: Option<String>,
@@ -51,16 +42,28 @@ pub struct ChatPayload {
 }
 
 #[derive(Deserialize)]
-pub struct EntityPayload {
+pub struct Entity {
     pub offset: u32,
     pub length: u32,
     #[serde(alias = "type")]
     pub type_: String,
 }
 
+#[derive(Deserialize)]
+pub struct InlineQuery {
+    pub id: String,
+    pub from: User,
+    pub query: String,
+    pub offset: String,
+    pub chat_type: String,
+}
+
 #[derive(Serialize)]
 pub struct TelegramResponse {
     pub method: String,
     pub chat_id: i64,
-    pub text: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub message_id: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub text: Option<String>,
 }
