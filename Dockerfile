@@ -11,6 +11,5 @@ COPY . .
 RUN cargo build --release
 
 FROM debian:bookworm-slim
-RUN apt-get update & apt-get install -y extra-runtime-dependencies & rm -rf /var/lib/apt/lists/*
 COPY --from=builder /usr/src/chronosbot/target/release/chronosbot /usr/local/bin/chronosbot
 CMD ["chronosbot"]
