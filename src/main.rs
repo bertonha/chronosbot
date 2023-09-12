@@ -1,14 +1,14 @@
+mod command;
 mod telegram;
 mod time;
 
-use crate::telegram::{TelegramRequest, TelegramResponse};
-use crate::time::{format_time, parse_tz};
 use axum::{
     routing::{get, post},
     Json, Router,
 };
-use chrono::{NaiveTime, Utc};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+
+use crate::telegram::{TelegramRequest, TelegramResponse};
 
 #[tokio::main]
 async fn main() {
@@ -67,30 +67,12 @@ async fn receive_message(Json(payload): Json<TelegramRequest>) -> Json<Option<Te
 fn process_command(text: &str) -> String {
     if let Some((command, rest)) = text.split_once(' ') {
         match command {
-            "/start" => start(),
-            "/now" => now(rest),
-            _ => parse_time(text),
+            "/start" => command::start(),
+            "/now" => command::now(rest),
+            "/convert" => command::convert_time(rest).unwrap_or_else(|e| e.to_string()),
+            _ => "Invalid command".to_string(),
         }
     } else {
         "Invalid command".to_string()
-    }
-}
-
-fn start() -> String {
-    "Welcome!".to_string()
-}
-
-fn now(timezone: &str) -> String {
-    let tz = match parse_tz(timezone) {
-        Some(tz) => tz,
-        None => return format!("Invalid timezone: {timezone}").to_string(),
-    };
-    format_time(Utc::now().with_timezone(&tz))
-}
-
-fn parse_time(text: &str) -> String {
-    match NaiveTime::parse_from_str(text, "%H:%M:%S") {
-        Ok(time) => time.to_string(),
-        Err(_) => format!("Invalid time format: {text}").to_string(),
     }
 }
