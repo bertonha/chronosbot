@@ -65,14 +65,37 @@ async fn receive_message(Json(payload): Json<TelegramRequest>) -> Json<Option<Te
 }
 
 fn process_command(text: &str) -> String {
-    if let Some((command, rest)) = text.split_once(' ') {
-        match command {
-            "/start" => command::start(),
-            "/now" => command::now(rest),
-            "/convert" => command::convert_time(rest).unwrap_or_else(|e| e.to_string()),
-            _ => "Invalid command".to_string(),
-        }
-    } else {
-        "Invalid command".to_string()
+    match text {
+        "/start" => command::start(),
+
+        _ => match text.split_once(' ') {
+            Some((command, rest)) => match command {
+                "/now" => command::now(rest),
+                "/convert" => command::convert_time(rest).unwrap_or_else(|e| e.to_string()),
+                _ => "Invalid command".to_string(),
+            },
+            None => "Invalid command".to_string(),
+        },
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_process_command_start() {
+        let result = process_command("/start");
+        assert_eq!(result, "Welcome!".to_string());
+    }
+    #[test]
+    fn test_process_command_now() {
+        let result = process_command("/now utc");
+        assert_eq!(result, command::now("utc"));
+    }
+    #[test]
+    fn test_process_command_convert() {
+        let result = process_command("/convert 12:00 UTC BRT");
+        assert_eq!(result, "09:00:00".to_string());
     }
 }
