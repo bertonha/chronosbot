@@ -17,7 +17,7 @@ pub fn now(timezone: &str) -> String {
 }
 
 pub fn convert_time(input: &str) -> Result<String, Box<dyn Error>> {
-    let re = Regex::new(r"(\d{2}:\d{2}) (\w{3}) (\w{3})").unwrap();
+    let re = Regex::new(r"(\d{1,2}:?\d{0,2}) (\w*) (\w*)").unwrap();
 
     // Check if the input string matches the pattern
     if let Some(captures) = re.captures(input) {
@@ -54,6 +54,17 @@ mod tests {
     fn test_convert_time_utc_brl() {
         let result = convert_time("12:00 UTC BRT");
         assert_eq!(result.ok(), Some("09:00:00".to_string()));
+    }
+    #[test]
+    fn test_convert_time_one_digit() {
+        let result = convert_time("1:00 BRT CET");
+        assert_eq!(result.ok(), Some("06:00:00".to_string()));
+    }
+
+    #[test]
+    fn test_convert_time_minimal() {
+        let result = convert_time("1 BRT CET");
+        assert_eq!(result.ok(), Some("06:00:00".to_string()));
     }
 
     #[test]
