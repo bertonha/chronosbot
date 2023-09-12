@@ -17,7 +17,7 @@ pub fn now(timezone: &str) -> String {
 }
 
 pub fn convert_time(input: &str) -> Result<String, Box<dyn Error>> {
-    let re = Regex::new(r"(\d{1,2}:?\d{0,2}) (\w*) (\w*)").unwrap();
+    let re = Regex::new(r"(\d{1,2}:?\d{0,2}) (\w*) (\w*)")?;
 
     // Check if the input string matches the pattern
     if let Some(captures) = re.captures(input) {

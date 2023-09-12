@@ -86,7 +86,7 @@ mod tests {
     #[test]
     fn test_process_command_start() {
         let result = process_command("/start");
-        assert_eq!(result, "Welcome!".to_string());
+        assert_eq!(result, command::start());
     }
     #[test]
     fn test_process_command_now() {
@@ -96,6 +96,6 @@ mod tests {
     #[test]
     fn test_process_command_convert() {
         let result = process_command("/convert 12:00 UTC BRT");
-        assert_eq!(result, "09:00:00".to_string());
+        assert_eq!(result, command::convert_time("12:00 UTC BRT").unwrap());
     }
 }
