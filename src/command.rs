@@ -12,15 +12,27 @@ pub fn process_command(text: &str) -> String {
             Some((command, rest)) => match command {
                 "/now" => now(rest),
                 "/convert" => convert(rest).unwrap_or_else(|e| e.to_string()),
-                _ => "Invalid command".to_string(),
+                _ => invalid_command(),
             },
-            None => "Invalid command".to_string(),
+            None => invalid_command(),
         },
     }
 }
 
+fn command_list() -> String {
+    "Commands accepted:\n\
+    /start\n\
+    /now <timezone>\n\
+    /convert <time> <source timezone> <target timezone>"
+        .to_string()
+}
+
+fn invalid_command() -> String {
+    format!("Invalid command\n{}", command_list())
+}
+
 fn start() -> String {
-    "Welcome!".to_string()
+    format!("Welcome!\n\n{}", command_list())
 }
 
 fn now(timezone: &str) -> String {
@@ -107,6 +119,6 @@ mod tests {
     #[test]
     fn test_process_command_invalid() {
         let result = process_command("invalid");
-        assert_eq!(result, "Invalid command");
+        assert_eq!(result, invalid_command());
     }
 }
