@@ -1,8 +1,15 @@
-use chrono::{Timelike, Utc};
-use regex::Regex;
 use std::error::Error;
 
+use chrono::{Timelike, Utc};
+use lazy_static::lazy_static;
+use regex::Regex;
+
 use crate::time::{format_time_with_timezone, parse_time, parse_tz};
+
+lazy_static! {
+    static ref RE_HOUR_TIMEZONE_TIMEZONE: Regex =
+        Regex::new(r"(\d{1,2}:?\d{0,2})\s*(\w*)\s*(\w*)").unwrap();
+}
 
 pub fn process_command(text: &str) -> String {
     match text {
@@ -19,16 +26,15 @@ pub fn process_command(text: &str) -> String {
     }
 }
 
-fn command_list() -> String {
+fn command_list() -> &'static str {
     "Commands accepted:\n\
     /start\n\
     /now <timezone>\n\
     /convert <time> <source timezone> <target timezone>"
-        .to_string()
 }
 
 fn invalid_command() -> String {
-    format!("Invalid command\n{}", command_list())
+    format!("Invalid command.\n\n{}", command_list())
 }
 
 fn start() -> String {
@@ -38,17 +44,14 @@ fn start() -> String {
 fn now(timezone: &str) -> String {
     let tz = match parse_tz(timezone.trim()) {
         Ok(tz) => tz,
-        _ => return format!("Invalid timezone: {timezone}").to_string(),
+        Err(err) => return err.to_string(),
     };
     let now = Utc::now().with_timezone(&tz);
     format_time_with_timezone(now)
 }
 
 fn convert(input: &str) -> Result<String, Box<dyn Error>> {
-    let re = Regex::new(r"(\d{1,2}:?\d{0,2})\s*(\w*)\s*(\w*)")?;
-
-    // Check if the input string matches the pattern
-    if let Some(captures) = re.captures(input) {
+    if let Some(captures) = RE_HOUR_TIMEZONE_TIMEZONE.captures(input) {
         let source_time = captures.get(1).unwrap().as_str();
         let source_timezone = captures.get(2).unwrap().as_str();
         let target_timezone = captures.get(3).unwrap().as_str();
@@ -79,27 +82,27 @@ mod tests {
     #[test]
     fn test_convert_time_brt_cet() {
         let result = convert("12:00 BRT CET");
-        assert_eq!(result.ok(), Some("17:00 CET".to_string()));
+        assert_eq!(result.unwrap(), "17:00 CET");
     }
     #[test]
     fn test_convert_time_utc_brl() {
         let result = convert("12:00 UTC BRT");
-        assert_eq!(result.ok(), Some("09:00 BRT".to_string()));
+        assert_eq!(result.unwrap(), "09:00 BRT");
     }
     #[test]
     fn test_convert_time_one_digit() {
         let result = convert("1:00 BRT CET");
-        assert_eq!(result.ok(), Some("06:00 CET".to_string()));
+        assert_eq!(result.unwrap(), "06:00 CET");
     }
     #[test]
     fn test_convert_time_minimal() {
         let result = convert("1 BRT CET");
-        assert_eq!(result.ok(), Some("06:00 CET".to_string()));
+        assert_eq!(result.unwrap(), "06:00 CET");
     }
     #[test]
     fn test_convert_time_multiple_spaces() {
         let result = convert("12:00    BRT     RO    ");
-        assert_eq!(result.ok(), Some("18:00 EET".to_string()));
+        assert_eq!(result.unwrap(), "18:00 EET");
     }
     #[test]
     fn test_convert_time_missing_target_tz() {
