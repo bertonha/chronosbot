@@ -25,7 +25,7 @@ pub struct User {
     pub is_bot: bool,
     pub first_name: String,
     pub last_name: Option<String>,
-    pub username: String,
+    pub username: Option<String>,
     pub language_code: Option<String>,
 }
 
