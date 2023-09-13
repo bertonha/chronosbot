@@ -26,11 +26,16 @@ pub fn process_command(text: &str) -> String {
     }
 }
 
-fn command_list() -> &'static str {
-    "Commands accepted:\n\
-    /start\n\
-    /now <timezone>\n\
-    /convert <time> <source timezone> <target timezone>"
+const NOW_COMMAND_INFO: &str = "/now <timezone>";
+const CONVERT_COMMAND_INFO: &str = "/convert <time> <source timezone> <target timezone>";
+
+fn command_list() -> String {
+    format!(
+        "Commands accepted:\n\
+        /start\n\
+        {NOW_COMMAND_INFO}\n\
+        {CONVERT_COMMAND_INFO}"
+    )
 }
 
 fn invalid_command() -> String {
@@ -71,7 +76,10 @@ fn convert(input: &str) -> Result<String, Box<dyn Error>> {
         let target_time = source_time.with_timezone(&target_tz);
         Ok(format_time_with_timezone(target_time))
     } else {
-        Err(Box::try_from("Invalid format".to_string()).unwrap())
+        Err(Box::try_from(format!(
+            "Invalid pattern. Please follow correct pattern as bellow\n\n{CONVERT_COMMAND_INFO}"
+        ))
+        .unwrap())
     }
 }
 
