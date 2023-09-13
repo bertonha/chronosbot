@@ -2,13 +2,13 @@ mod command;
 mod telegram;
 mod time;
 
+use crate::command::process_command;
+use crate::telegram::{TelegramRequest, TelegramResponse};
 use axum::{
     routing::{get, post},
     Json, Router,
 };
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
-
-use crate::telegram::{TelegramRequest, TelegramResponse};
 
 #[tokio::main]
 async fn main() {
@@ -62,45 +62,4 @@ async fn receive_message(Json(payload): Json<TelegramRequest>) -> Json<Option<Te
     }
 
     Json(response)
-}
-
-fn process_command(text: &str) -> String {
-    match text {
-        "/start" => command::start(),
-
-        _ => match text.split_once(' ') {
-            Some((command, rest)) => match command {
-                "/now" => command::now(rest),
-                "/convert" => command::convert(rest).unwrap_or_else(|e| e.to_string()),
-                _ => "Invalid command".to_string(),
-            },
-            None => "Invalid command".to_string(),
-        },
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_process_command_start() {
-        let result = process_command("/start");
-        assert_eq!(result, command::start());
-    }
-    #[test]
-    fn test_process_command_now() {
-        let result = process_command("/now utc");
-        assert_eq!(result, command::now("utc"));
-    }
-    #[test]
-    fn test_process_command_convert() {
-        let result = process_command("/convert 12:00 UTC BRT");
-        assert_eq!(result, command::convert("12:00 UTC BRT").unwrap());
-    }
-    #[test]
-    fn test_process_command_invalid() {
-        let result = process_command("invalid");
-        assert_eq!(result, "Invalid command");
-    }
 }

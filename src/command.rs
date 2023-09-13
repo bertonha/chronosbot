@@ -4,11 +4,26 @@ use std::error::Error;
 
 use crate::time::{format_time_with_timezone, parse_time, parse_tz};
 
-pub fn start() -> String {
+pub fn process_command(text: &str) -> String {
+    match text {
+        "/start" => start(),
+
+        _ => match text.split_once(' ') {
+            Some((command, rest)) => match command {
+                "/now" => now(rest),
+                "/convert" => convert(rest).unwrap_or_else(|e| e.to_string()),
+                _ => "Invalid command".to_string(),
+            },
+            None => "Invalid command".to_string(),
+        },
+    }
+}
+
+fn start() -> String {
     "Welcome!".to_string()
 }
 
-pub fn now(timezone: &str) -> String {
+fn now(timezone: &str) -> String {
     let tz = match parse_tz(timezone) {
         Ok(tz) => tz,
         _ => return format!("Invalid timezone: {timezone}").to_string(),
@@ -17,7 +32,7 @@ pub fn now(timezone: &str) -> String {
     format_time_with_timezone(now, timezone)
 }
 
-pub fn convert(input: &str) -> Result<String, Box<dyn Error>> {
+fn convert(input: &str) -> Result<String, Box<dyn Error>> {
     let re = Regex::new(r"(\d{1,2}:?\d{0,2}) (\w*) (\w*)")?;
 
     // Check if the input string matches the pattern
@@ -73,5 +88,25 @@ mod tests {
     fn test_convert_time_missing_target_tz() {
         let result = convert("12:00 UTC");
         assert!(result.is_err());
+    }
+    #[test]
+    fn test_process_command_start() {
+        let result = process_command("/start");
+        assert_eq!(result, start());
+    }
+    #[test]
+    fn test_process_command_now() {
+        let result = process_command("/now utc");
+        assert_eq!(result, now("utc"));
+    }
+    #[test]
+    fn test_process_command_convert() {
+        let result = process_command("/convert 12:00 UTC BRT");
+        assert_eq!(result, convert("12:00 UTC BRT").unwrap());
+    }
+    #[test]
+    fn test_process_command_invalid() {
+        let result = process_command("invalid");
+        assert_eq!(result, "Invalid command");
     }
 }
