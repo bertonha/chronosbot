@@ -3,7 +3,7 @@
 use chrono::{DateTime, NaiveTime, Timelike};
 use chrono_tz::America::Sao_Paulo;
 use chrono_tz::Europe::{Amsterdam, Bucharest, Madrid};
-use chrono_tz::{ParseError, Tz, CET, UTC};
+use chrono_tz::{ParseError, Tz, CET, EET, UTC};
 use std::error::Error;
 
 pub fn parse_tz(text: &str) -> Result<Tz, ParseError> {
@@ -12,6 +12,7 @@ pub fn parse_tz(text: &str) -> Result<Tz, ParseError> {
         Err(error) => match text.to_lowercase().as_str() {
             "utc" => Ok(UTC),
             "cet" | "europe" => Ok(CET),
+            "eet" => Ok(EET),
             "madrid" | "barcelona" | "spain" | "es" => Ok(Madrid),
             "brazil" | "brasil" | "brt" | "br" => Ok(Sao_Paulo),
             "netherlands" | "amsterdam" | "nl" => Ok(Amsterdam),
