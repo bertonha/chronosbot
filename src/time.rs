@@ -26,6 +26,10 @@ pub fn format_time(time: DateTime<Tz>) -> String {
     time.format(format).to_string()
 }
 
+pub fn format_time_with_timezone(time: DateTime<Tz>, timezone: &str) -> String {
+    format!("{} {}", format_time(time), timezone)
+}
+
 pub fn parse_time(text: &str) -> Result<NaiveTime, Box<dyn Error>> {
     match NaiveTime::parse_from_str(text, "%H:%M:%S") {
         Ok(time) => Ok(time),
