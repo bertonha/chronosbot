@@ -36,7 +36,7 @@ fn start() -> String {
 }
 
 fn now(timezone: &str) -> String {
-    let tz = match parse_tz(timezone) {
+    let tz = match parse_tz(timezone.trim()) {
         Ok(tz) => tz,
         _ => return format!("Invalid timezone: {timezone}").to_string(),
     };
@@ -45,7 +45,7 @@ fn now(timezone: &str) -> String {
 }
 
 fn convert(input: &str) -> Result<String, Box<dyn Error>> {
-    let re = Regex::new(r"(\d{1,2}:?\d{0,2}) (\w*) (\w*)")?;
+    let re = Regex::new(r"(\d{1,2}:?\d{0,2})\s*(\w*)\s*(\w*)")?;
 
     // Check if the input string matches the pattern
     if let Some(captures) = re.captures(input) {
@@ -97,6 +97,11 @@ mod tests {
         assert_eq!(result.ok(), Some("06:00 CET".to_string()));
     }
     #[test]
+    fn test_convert_time_multiple_spaces() {
+        let result = convert("12:00    BRT     RO    ");
+        assert_eq!(result.ok(), Some("18:00 EET".to_string()));
+    }
+    #[test]
     fn test_convert_time_missing_target_tz() {
         let result = convert("12:00 UTC");
         assert!(result.is_err());
@@ -109,6 +114,11 @@ mod tests {
     #[test]
     fn test_process_command_now() {
         let result = process_command("/now utc");
+        assert_eq!(result, now("utc"));
+    }
+    #[test]
+    fn test_process_command_now_multiple_spaces() {
+        let result = process_command("/now   utc    ");
         assert_eq!(result, now("utc"));
     }
     #[test]
