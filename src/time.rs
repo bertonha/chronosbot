@@ -1,6 +1,8 @@
+#![allow(non_upper_case_globals)]
+
 use chrono::{DateTime, NaiveTime, Timelike};
 use chrono_tz::America::Sao_Paulo;
-use chrono_tz::Europe::Bucharest;
+use chrono_tz::Europe::{Amsterdam, Bucharest, Madrid};
 use chrono_tz::{ParseError, Tz, CET, UTC};
 use std::error::Error;
 
@@ -10,8 +12,10 @@ pub fn parse_tz(text: &str) -> Result<Tz, ParseError> {
         Err(error) => match text.to_lowercase().as_str() {
             "utc" => Ok(UTC),
             "cet" | "europe" => Ok(CET),
-            "brazil" | "brasil" | "brt" => Ok(Sao_Paulo),
-            "romania" => Ok(Bucharest),
+            "madrid" | "barcelona" | "spain" | "es" => Ok(Madrid),
+            "brazil" | "brasil" | "brt" | "br" => Ok(Sao_Paulo),
+            "netherlands" | "amsterdam" | "nl" => Ok(Amsterdam),
+            "romania" | "romenia" | "ro" => Ok(Bucharest),
             _ => Err(error),
         },
     }
@@ -26,8 +30,18 @@ pub fn format_time(time: DateTime<Tz>) -> String {
     time.format(format).to_string()
 }
 
-pub fn format_time_with_timezone(time: DateTime<Tz>, timezone: &str) -> String {
-    format!("{} {}", format_time(time), timezone)
+pub fn format_time_with_timezone(time: DateTime<Tz>) -> String {
+    format!("{} {}", format_time(time), format_timezone(time.timezone()))
+}
+
+pub fn format_timezone(tz: Tz) -> String {
+    match tz {
+        UTC => "UTC".to_string(),
+        CET | Madrid | Amsterdam => "CET".to_string(),
+        Sao_Paulo => "BRT".to_string(),
+        Bucharest => "EET".to_string(),
+        _ => tz.to_string(),
+    }
 }
 
 pub fn parse_time(text: &str) -> Result<NaiveTime, Box<dyn Error>> {
@@ -65,10 +79,18 @@ mod tests {
         let result = parse_time("12");
         assert_eq!(result.ok(), NaiveTime::from_hms_opt(12, 0, 0));
     }
-
     #[test]
     fn test_parse_time_invalid() {
         let result = parse_time("HALO");
         assert!(result.is_err());
+    }
+    #[test]
+    fn test_parse_tz() {
+        let result = parse_tz("UTC");
+        assert_eq!(result, Ok(UTC));
+        let result = parse_tz("BRT");
+        assert_eq!(result, Ok(Sao_Paulo));
+        let result = parse_tz("CET");
+        assert_eq!(result, Ok(CET));
     }
 }

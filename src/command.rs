@@ -29,7 +29,7 @@ fn now(timezone: &str) -> String {
         _ => return format!("Invalid timezone: {timezone}").to_string(),
     };
     let now = Utc::now().with_timezone(&tz);
-    format_time_with_timezone(now, timezone)
+    format_time_with_timezone(now)
 }
 
 fn convert(input: &str) -> Result<String, Box<dyn Error>> {
@@ -54,7 +54,7 @@ fn convert(input: &str) -> Result<String, Box<dyn Error>> {
             .with_second(0)
             .unwrap();
         let target_time = source_time.with_timezone(&target_tz);
-        Ok(format_time_with_timezone(target_time, target_timezone))
+        Ok(format_time_with_timezone(target_time))
     } else {
         Err(Box::try_from("Invalid format".to_string()).unwrap())
     }
