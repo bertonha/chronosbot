@@ -71,7 +71,7 @@ fn process_command(text: &str) -> String {
         _ => match text.split_once(' ') {
             Some((command, rest)) => match command {
                 "/now" => command::now(rest),
-                "/convert" => command::convert_time(rest).unwrap_or_else(|e| e.to_string()),
+                "/convert" => command::convert(rest).unwrap_or_else(|e| e.to_string()),
                 _ => "Invalid command".to_string(),
             },
             None => "Invalid command".to_string(),
@@ -96,6 +96,11 @@ mod tests {
     #[test]
     fn test_process_command_convert() {
         let result = process_command("/convert 12:00 UTC BRT");
-        assert_eq!(result, command::convert_time("12:00 UTC BRT").unwrap());
+        assert_eq!(result, command::convert("12:00 UTC BRT").unwrap());
+    }
+    #[test]
+    fn test_process_command_invalid() {
+        let result = process_command("invalid");
+        assert_eq!(result, "Invalid command");
     }
 }
