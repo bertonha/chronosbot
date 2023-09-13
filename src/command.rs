@@ -48,23 +48,23 @@ mod tests {
     #[test]
     fn test_convert_time_brt_cet() {
         let result = convert_time("12:00 BRT CET");
-        assert_eq!(result.ok(), Some("17:00:00".to_string()));
+        assert_eq!(result.ok(), Some("17:00".to_string()));
     }
     #[test]
     fn test_convert_time_utc_brl() {
         let result = convert_time("12:00 UTC BRT");
-        assert_eq!(result.ok(), Some("09:00:00".to_string()));
+        assert_eq!(result.ok(), Some("09:00".to_string()));
     }
     #[test]
     fn test_convert_time_one_digit() {
         let result = convert_time("1:00 BRT CET");
-        assert_eq!(result.ok(), Some("06:00:00".to_string()));
+        assert_eq!(result.ok(), Some("06:00".to_string()));
     }
 
     #[test]
     fn test_convert_time_minimal() {
         let result = convert_time("1 BRT CET");
-        assert_eq!(result.ok(), Some("06:00:00".to_string()));
+        assert_eq!(result.ok(), Some("06:00".to_string()));
     }
 
     #[test]

@@ -1,4 +1,4 @@
-use chrono::{DateTime, NaiveTime};
+use chrono::{DateTime, NaiveTime, Timelike};
 use chrono_tz::America::Sao_Paulo;
 use chrono_tz::Europe::Bucharest;
 use chrono_tz::{ParseError, Tz, CET, UTC};
@@ -18,7 +18,12 @@ pub fn parse_tz(text: &str) -> Result<Tz, ParseError> {
 }
 
 pub fn format_time(time: DateTime<Tz>) -> String {
-    time.format("%H:%M:%S").to_string()
+    let format = if time.second() == 0 {
+        "%H:%M"
+    } else {
+        "%H:%M:%S"
+    };
+    time.format(format).to_string()
 }
 
 pub fn parse_time(text: &str) -> Result<NaiveTime, Box<dyn Error>> {
