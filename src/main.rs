@@ -16,16 +16,18 @@ async fn main() {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    let app = Router::new()
-        .route("/", get(welcome))
-        .route("/", post(receive_message));
-
     let addr = "0.0.0.0:3000".parse().unwrap();
     tracing::debug!("listening on {}", addr);
     axum::Server::bind(&addr)
-        .serve(app.into_make_service())
+        .serve(app().into_make_service())
         .await
         .unwrap();
+}
+
+fn app() -> Router {
+    Router::new()
+        .route("/", get(welcome))
+        .route("/", post(receive_message))
 }
 
 async fn welcome() -> &'static str {
