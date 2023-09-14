@@ -8,11 +8,16 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
+use tower_http::trace::TraceLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
 async fn main() {
     tracing_subscriber::registry()
+        .with(
+            tracing_subscriber::EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| "chronosbot=debug,tower_http=debug".into()),
+        )
         .with(tracing_subscriber::fmt::layer())
         .init();
 
@@ -28,6 +33,7 @@ fn app() -> Router {
     Router::new()
         .route("/", get(welcome))
         .route("/", post(receive_message))
+        .layer(TraceLayer::new_for_http())
 }
 
 async fn welcome() -> &'static str {
@@ -64,4 +70,27 @@ async fn receive_message(Json(payload): Json<TelegramRequest>) -> Json<Option<Te
     }
 
     Json(response)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::body::Body;
+    use axum::http::{Request, StatusCode};
+    use tower::util::ServiceExt;
+
+    #[tokio::test]
+    async fn hello_world() {
+        let app = app();
+
+        let response = app
+            .oneshot(Request::builder().uri("/").body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        assert_eq!(&body[..], b"<h1>Welcome!</h1>");
+    }
 }
