@@ -12,17 +12,12 @@ lazy_static! {
 }
 
 pub fn process_command(text: &str) -> String {
-    match text {
+    let (command, rest) = text.split_once(' ').unwrap_or((text, ""));
+    match command {
         "/start" => start(),
-
-        _ => match text.split_once(' ') {
-            Some((command, rest)) => match command {
-                "/now" => now(rest),
-                "/convert" => convert(rest).unwrap_or_else(|e| e.to_string()),
-                _ => invalid_command(),
-            },
-            None => invalid_command(),
-        },
+        "/now" => now(rest),
+        "/convert" => convert(rest).unwrap_or_else(|e| e.to_string()),
+        _ => invalid_command(),
     }
 }
 
