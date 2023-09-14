@@ -74,13 +74,15 @@ async fn receive_message(Json(payload): Json<TelegramRequest>) -> Json<Option<Te
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use axum::body::Body;
-    use axum::http::{Request, StatusCode};
+    use axum::http::{self, Request, StatusCode};
+    use serde_json::json;
     use tower::util::ServiceExt;
 
+    use super::*;
+
     #[tokio::test]
-    async fn hello_world() {
+    async fn welcome() {
         let app = app();
 
         let response = app
@@ -92,5 +94,46 @@ mod tests {
 
         let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
         assert_eq!(&body[..], b"<h1>Welcome!</h1>");
+    }
+
+    #[tokio::test]
+    async fn receive_message() {
+        let app = app();
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::POST)
+                    .uri("/")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(
+                        json!(
+                            {
+                                "update_id": 123,
+                                "message": {
+                                    "message_id": 123,
+                                    "text": "/start",
+                                    "date": 123,
+                                    "from": {
+                                        "id": 123,
+                                        "is_bot": false,
+                                        "first_name": "John",
+                                    },
+                                    "chat": {
+                                        "id": 123,
+                                        "type": "private",
+                                    },
+                                }
+                            }
+                        )
+                        .to_string()
+                        .into(),
+                    )
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
     }
 }
