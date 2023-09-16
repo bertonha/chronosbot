@@ -5,8 +5,8 @@ use axum::{
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-use crate::command::process_command;
-use crate::telegram::{RequestType, TelegramRequest, TelegramResponse};
+use crate::command::{convert, process_command};
+use crate::telegram::{InlineQueryResultArticle, RequestType, TelegramRequest, TelegramResponse};
 
 mod command;
 mod telegram;
@@ -43,13 +43,21 @@ async fn welcome() -> &'static str {
 
 async fn receive_message(Json(payload): Json<TelegramRequest>) -> Json<Option<TelegramResponse>> {
     let response = match RequestType::from_request(payload) {
-        RequestType::Message(message) => match message.text {
-            Some(text) => Some(TelegramResponse::send_message(
-                message.chat.id,
-                process_command(&text),
-            )),
-            None => None,
-        },
+        RequestType::Message(message) => {
+            if let Some(via_bot) = message.via_bot {
+                if via_bot.is_bot {
+                    return Json(None);
+                }
+            }
+
+            match message.text {
+                Some(text) => Some(TelegramResponse::send_message(
+                    message.chat.id,
+                    process_command(&text),
+                )),
+                None => None,
+            }
+        }
 
         RequestType::EditedMessage(message) => match message.text {
             Some(text) => Some(TelegramResponse::edit_message(
@@ -60,7 +68,13 @@ async fn receive_message(Json(payload): Json<TelegramRequest>) -> Json<Option<Te
             None => None,
         },
 
-        RequestType::InlineQuery(_) => None,
+        RequestType::InlineQuery(inline) => match convert(inline.query.trim()) {
+            Ok(converted) => Some(TelegramResponse::answer_inline_query_article(
+                inline.id,
+                vec![InlineQueryResultArticle::new("1".into(), converted)],
+            )),
+            Err(_) => None,
+        },
 
         RequestType::Unknown => None,
     };

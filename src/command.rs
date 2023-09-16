@@ -22,7 +22,7 @@ pub fn process_command(text: &str) -> String {
 }
 
 const NOW_COMMAND_INFO: &str = "/now <timezone>";
-const CONVERT_COMMAND_INFO: &str = "/convert <time> <source timezone> <target timezone>";
+const CONVERT_COMMAND_INFO: &str = "/convert <time> <source_timezone> <target_timezone>";
 
 fn command_list() -> String {
     format!(
@@ -50,7 +50,7 @@ fn now(timezone: &str) -> String {
     format_time_with_timezone(now)
 }
 
-fn convert(input: &str) -> Result<String, Box<dyn Error>> {
+pub fn convert(input: &str) -> Result<String, Box<dyn Error>> {
     if let Some(captures) = RE_HOUR_TIMEZONE_TIMEZONE.captures(input) {
         let source_time = captures.get(1).unwrap().as_str();
         let source_timezone = captures.get(2).unwrap().as_str();

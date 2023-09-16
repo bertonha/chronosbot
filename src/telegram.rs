@@ -39,6 +39,7 @@ pub struct Message {
     pub text: Option<String>,
     pub new_chat_members: Option<Vec<User>>,
     pub entities: Option<Vec<Entity>>,
+    pub via_bot: Option<User>,
 }
 
 #[derive(Deserialize)]
@@ -89,6 +90,37 @@ pub struct TelegramResponse {
     message_id: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     text: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    inline_query_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    results: Option<Vec<InlineQueryResultArticle>>,
+}
+
+#[derive(Serialize)]
+pub struct InlineQueryResultArticle {
+    #[serde(rename = "type")]
+    pub type_: String,
+    pub id: String,
+    pub title: String,
+    pub input_message_content: InputMessageContent,
+}
+
+impl InlineQueryResultArticle {
+    pub fn new(id: String, title: String) -> Self {
+        Self {
+            type_: "article".to_string(),
+            id,
+            title: title.clone(),
+            input_message_content: InputMessageContent {
+                message_text: title,
+            },
+        }
+    }
+}
+
+#[derive(Serialize)]
+pub struct InputMessageContent {
+    pub message_text: String,
 }
 
 impl TelegramResponse {
@@ -98,6 +130,8 @@ impl TelegramResponse {
             chat_id: Some(chat_id),
             message_id: None,
             text: Some(text),
+            inline_query_id: None,
+            results: None,
         }
     }
 
@@ -107,6 +141,22 @@ impl TelegramResponse {
             chat_id: Some(chat_id),
             message_id: Some(message_id),
             text: Some(text),
+            inline_query_id: None,
+            results: None,
+        }
+    }
+
+    pub fn answer_inline_query_article(
+        inline_query_id: String,
+        result: Vec<InlineQueryResultArticle>,
+    ) -> Self {
+        Self {
+            method: "answerInlineQuery".to_string(),
+            chat_id: None,
+            message_id: None,
+            text: None,
+            inline_query_id: Some(inline_query_id),
+            results: Some(result),
         }
     }
 }
