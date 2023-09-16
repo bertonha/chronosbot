@@ -15,6 +15,7 @@
 **/.toolstarget
 **/.vs
 **/.vscode
+**/.idea
 **/*.*proj.user
 **/*.dbmdl
 **/*.jfm
@@ -30,3 +31,4 @@
 /target
 LICENSE
 README.md
+.pre-commit-config.yaml
