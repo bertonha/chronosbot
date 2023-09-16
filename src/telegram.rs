@@ -9,14 +9,14 @@ pub enum RequestType {
 
 impl RequestType {
     pub fn from_request(request: TelegramRequest) -> Self {
-        if let Some(message) = &request.message {
-            return Self::Message(message.clone());
+        if let Some(message) = request.message {
+            return Self::Message(message);
         }
-        if let Some(edited_message) = &request.edited_message {
-            return Self::EditedMessage(edited_message.clone());
+        if let Some(edited_message) = request.edited_message {
+            return Self::EditedMessage(edited_message);
         }
-        if let Some(inline_query) = &request.inline_query {
-            return Self::InlineQuery(inline_query.clone());
+        if let Some(inline_query) = request.inline_query {
+            return Self::InlineQuery(inline_query);
         }
         Self::Unknown
     }
@@ -30,7 +30,7 @@ pub struct TelegramRequest {
     pub inline_query: Option<InlineQuery>,
 }
 
-#[derive(Clone, Deserialize)]
+#[derive(Deserialize)]
 pub struct Message {
     pub message_id: i64,
     pub from: User,
@@ -41,7 +41,7 @@ pub struct Message {
     pub entities: Option<Vec<Entity>>,
 }
 
-#[derive(Clone, Deserialize)]
+#[derive(Deserialize)]
 pub struct User {
     pub id: i64,
     pub is_bot: bool,
@@ -51,7 +51,7 @@ pub struct User {
     pub language_code: Option<String>,
 }
 
-#[derive(Clone, Deserialize)]
+#[derive(Deserialize)]
 pub struct Chat {
     pub id: i64,
     pub first_name: Option<String>,
@@ -63,7 +63,7 @@ pub struct Chat {
     pub all_members_are_administrators: Option<bool>,
 }
 
-#[derive(Clone, Deserialize)]
+#[derive(Deserialize)]
 pub struct Entity {
     pub offset: u32,
     pub length: u32,
@@ -71,7 +71,7 @@ pub struct Entity {
     pub type_: String,
 }
 
-#[derive(Clone, Deserialize)]
+#[derive(Deserialize)]
 pub struct InlineQuery {
     pub id: String,
     pub from: User,
