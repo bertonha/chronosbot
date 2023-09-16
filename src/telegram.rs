@@ -82,10 +82,31 @@ pub struct InlineQuery {
 
 #[derive(Serialize)]
 pub struct TelegramResponse {
-    pub method: String,
-    pub chat_id: i64,
+    method: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub message_id: Option<i64>,
+    chat_id: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub text: Option<String>,
+    message_id: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    text: Option<String>,
+}
+
+impl TelegramResponse {
+    pub fn send_message(chat_id: i64, text: String) -> Self {
+        Self {
+            method: "sendMessage".to_string(),
+            chat_id: Some(chat_id),
+            message_id: None,
+            text: Some(text),
+        }
+    }
+
+    pub fn edit_message(chat_id: i64, message_id: i64, text: String) -> Self {
+        Self {
+            method: "editMessageText".to_string(),
+            chat_id: Some(chat_id),
+            message_id: Some(message_id),
+            text: Some(text),
+        }
+    }
 }

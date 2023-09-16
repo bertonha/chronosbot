@@ -44,22 +44,19 @@ async fn welcome() -> &'static str {
 async fn receive_message(Json(payload): Json<TelegramRequest>) -> Json<Option<TelegramResponse>> {
     let response = match RequestType::from_request(payload) {
         RequestType::Message(message) => match message.text {
-            Some(text) => Some(TelegramResponse {
-                method: "sendMessage".to_string(),
-                chat_id: message.chat.id,
-                message_id: None,
-                text: Some(process_command(&text)),
-            }),
+            Some(text) => Some(TelegramResponse::send_message(
+                message.chat.id,
+                process_command(&text),
+            )),
             None => None,
         },
 
         RequestType::EditedMessage(message) => match message.text {
-            Some(text) => Some(TelegramResponse {
-                method: "editMessageText".to_string(),
-                chat_id: message.chat.id,
-                message_id: Some(message.message_id + 1),
-                text: Some(process_command(&text)),
-            }),
+            Some(text) => Some(TelegramResponse::edit_message(
+                message.chat.id,
+                message.message_id + 1,
+                process_command(&text),
+            )),
             None => None,
         },
 
