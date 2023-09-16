@@ -1,15 +1,16 @@
-mod command;
-mod telegram;
-mod time;
-
-use crate::command::process_command;
-use crate::telegram::{TelegramRequest, TelegramResponse};
 use axum::{
     routing::{get, post},
     Json, Router,
 };
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+
+use crate::command::process_command;
+use crate::telegram::{RequestType, TelegramRequest, TelegramResponse};
+
+mod command;
+mod telegram;
+mod time;
 
 #[tokio::main]
 async fn main() {
@@ -41,33 +42,31 @@ async fn welcome() -> &'static str {
 }
 
 async fn receive_message(Json(payload): Json<TelegramRequest>) -> Json<Option<TelegramResponse>> {
-    let response;
+    let response = match RequestType::from_request(payload) {
+        RequestType::Message(message) => match message.text {
+            Some(text) => Some(TelegramResponse {
+                method: "sendMessage".to_string(),
+                chat_id: message.chat.id,
+                message_id: None,
+                text: Some(process_command(&text)),
+            }),
+            None => None,
+        },
 
-    if let Some(message) = payload.message {
-        if message.text.is_none() {
-            return Json(None);
-        }
+        RequestType::EditedMessage(message) => match message.text {
+            Some(text) => Some(TelegramResponse {
+                method: "editMessageText".to_string(),
+                chat_id: message.chat.id,
+                message_id: Some(message.message_id + 1),
+                text: Some(process_command(&text)),
+            }),
+            None => None,
+        },
 
-        response = Some(TelegramResponse {
-            method: "sendMessage".to_string(),
-            chat_id: message.chat.id,
-            message_id: None,
-            text: Some(process_command(&message.text.unwrap())),
-        });
-    } else if let Some(edited_message) = payload.edited_message {
-        if edited_message.text.is_none() {
-            return Json(None);
-        }
+        RequestType::InlineQuery(_) => None,
 
-        response = Some(TelegramResponse {
-            method: "editMessageText".to_string(),
-            chat_id: edited_message.chat.id,
-            message_id: Some(edited_message.message_id + 1),
-            text: Some(process_command(&edited_message.text.unwrap())),
-        });
-    } else {
-        return Json(None);
-    }
+        RequestType::Unknown => None,
+    };
 
     Json(response)
 }
