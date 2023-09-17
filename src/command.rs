@@ -69,7 +69,11 @@ pub fn convert(input: &str) -> Result<String, Box<dyn Error>> {
             .with_second(0)
             .unwrap();
         let target_time = source_time.with_timezone(&target_tz);
-        Ok(format_time_with_timezone(target_time))
+        Ok(format!(
+            "{} - {}",
+            format_time_with_timezone(source_time),
+            format_time_with_timezone(target_time)
+        ))
     } else {
         Err(Box::try_from(format!(
             "Invalid pattern. Please follow correct pattern as bellow\n\n{CONVERT_COMMAND_INFO}"
@@ -85,27 +89,27 @@ mod tests {
     #[test]
     fn test_convert_time_brt_cet() {
         let result = convert("12:00 BRT CET");
-        assert_eq!(result.unwrap(), "17:00 CET");
+        assert_eq!(result.unwrap(), "12:00 BRT - 17:00 CET");
     }
     #[test]
     fn test_convert_time_utc_brl() {
         let result = convert("12:00 UTC BRT");
-        assert_eq!(result.unwrap(), "09:00 BRT");
+        assert_eq!(result.unwrap(), "12:00 UTC - 09:00 BRT");
     }
     #[test]
     fn test_convert_time_one_digit() {
         let result = convert("1:00 BRT CET");
-        assert_eq!(result.unwrap(), "06:00 CET");
+        assert_eq!(result.unwrap(), "01:00 BRT - 06:00 CET");
     }
     #[test]
     fn test_convert_time_minimal() {
         let result = convert("1 BRT CET");
-        assert_eq!(result.unwrap(), "06:00 CET");
+        assert_eq!(result.unwrap(), "01:00 BRT - 06:00 CET");
     }
     #[test]
     fn test_convert_time_multiple_spaces() {
         let result = convert("12:00    BRT     RO    ");
-        assert_eq!(result.unwrap(), "18:00 EET");
+        assert_eq!(result.unwrap(), "12:00 BRT - 18:00 EET");
     }
     #[test]
     fn test_convert_time_missing_target_tz() {
