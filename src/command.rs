@@ -44,18 +44,18 @@ fn now(timezone: &str) -> String {
 }
 
 pub fn convert(input: &str) -> Result<String, Box<dyn Error>> {
-    let bla = input.split_whitespace().collect::<Vec<&str>>();
+    let split_values = input.split_whitespace().collect::<Vec<&str>>();
 
-    if bla.len() != 3 {
+    if split_values.len() != 3 {
         return Err(format!(
             "Invalid pattern. Please follow correct pattern as bellow\n\n{CONVERT_COMMAND_INFO}"
         )
         .into());
     }
 
-    let time = parse_time(bla[0])?;
-    let source_tz = parse_tz(bla[1])?;
-    let target_tz = parse_tz(bla[2])?;
+    let time = parse_time(split_values[0])?;
+    let source_tz = parse_tz(split_values[1])?;
+    let target_tz = parse_tz(split_values[2])?;
 
     let source_time = Utc::now()
         .with_timezone(&source_tz)
