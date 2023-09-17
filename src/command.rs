@@ -15,15 +15,14 @@ pub fn process_command(text: &str) -> String {
     }
 }
 
-const NOW_COMMAND_INFO: &str = "/now <timezone>";
-const CONVERT_COMMAND_INFO: &str = "/convert <time> <source_timezone> <target_timezone>";
+const CONVERT_COMMAND_INFO: &str = "<time> <source_timezone> <target_timezone>";
 
 fn command_list() -> String {
     format!(
         "Commands accepted:\n\
         /start\n\
-        {NOW_COMMAND_INFO}\n\
-        {CONVERT_COMMAND_INFO}"
+        /now <timezone>\n\
+        /convert {CONVERT_COMMAND_INFO}"
     )
 }
 
