@@ -93,11 +93,11 @@ pub struct TelegramResponse {
     #[serde(skip_serializing_if = "Option::is_none")]
     inline_query_id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    results: Option<Vec<InlineQueryResultArticle>>,
+    results: Option<Vec<InlineQueryResult>>,
 }
 
 #[derive(Serialize)]
-pub struct InlineQueryResultArticle {
+pub struct InlineQueryResult {
     #[serde(rename = "type")]
     pub type_: String,
     pub id: String,
@@ -105,10 +105,10 @@ pub struct InlineQueryResultArticle {
     pub input_message_content: InputMessageContent,
 }
 
-impl InlineQueryResultArticle {
-    pub fn new(id: String, title: String) -> Self {
+impl InlineQueryResult {
+    pub fn article(id: String, title: String) -> Self {
         Self {
-            type_: "article".to_string(),
+            type_: "article".into(),
             id,
             title: title.clone(),
             input_message_content: InputMessageContent {
@@ -126,7 +126,7 @@ pub struct InputMessageContent {
 impl TelegramResponse {
     pub fn send_message(chat_id: i64, text: String) -> Self {
         Self {
-            method: "sendMessage".to_string(),
+            method: "sendMessage".into(),
             chat_id: Some(chat_id),
             message_id: None,
             text: Some(text),
@@ -137,7 +137,7 @@ impl TelegramResponse {
 
     pub fn edit_message(chat_id: i64, message_id: i64, text: String) -> Self {
         Self {
-            method: "editMessageText".to_string(),
+            method: "editMessageText".into(),
             chat_id: Some(chat_id),
             message_id: Some(message_id),
             text: Some(text),
@@ -146,12 +146,9 @@ impl TelegramResponse {
         }
     }
 
-    pub fn answer_inline_query_article(
-        inline_query_id: String,
-        result: Vec<InlineQueryResultArticle>,
-    ) -> Self {
+    pub fn answer_inline_query(inline_query_id: String, result: Vec<InlineQueryResult>) -> Self {
         Self {
-            method: "answerInlineQuery".to_string(),
+            method: "answerInlineQuery".into(),
             chat_id: None,
             message_id: None,
             text: None,

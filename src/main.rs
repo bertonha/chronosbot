@@ -6,7 +6,7 @@ use tower_http::trace::TraceLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use crate::command::{convert, process_command};
-use crate::telegram::{InlineQueryResultArticle, RequestType, TelegramRequest, TelegramResponse};
+use crate::telegram::{InlineQueryResult, RequestType, TelegramRequest, TelegramResponse};
 
 mod command;
 mod telegram;
@@ -69,9 +69,9 @@ async fn receive_message(Json(payload): Json<TelegramRequest>) -> Json<Option<Te
         },
 
         RequestType::InlineQuery(inline) => match convert(inline.query.trim()) {
-            Ok(converted) => Some(TelegramResponse::answer_inline_query_article(
+            Ok(converted) => Some(TelegramResponse::answer_inline_query(
                 inline.id,
-                vec![InlineQueryResultArticle::new("1".into(), converted)],
+                vec![InlineQueryResult::article("1".into(), converted)],
             )),
             Err(_) => None,
         },
