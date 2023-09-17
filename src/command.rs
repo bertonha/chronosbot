@@ -1,9 +1,9 @@
 use std::error::Error;
 
-use chrono::{DateTime, Timelike, Utc};
+use chrono::{DateTime, Utc};
 use chrono_tz::{ParseError, Tz};
 
-use crate::time::{format_time_with_timezone, parse_time, parse_tz};
+use crate::time::{format_time_with_timezone, parse_tz, time_with_timezone};
 
 pub fn process_command(text: &str) -> String {
     let (command, rest) = text.split_once(' ').unwrap_or((text, ""));
@@ -70,16 +70,7 @@ pub fn convert(input: &str) -> Result<String, Box<dyn Error>> {
             if split_values[0] == "now" {
                 now(split_values[1])?
             } else {
-                let time = parse_time(split_values[0])?;
-                let source_tz = parse_tz(split_values[1])?;
-                Utc::now()
-                    .with_timezone(&source_tz)
-                    .with_hour(time.hour())
-                    .unwrap()
-                    .with_minute(time.minute())
-                    .unwrap()
-                    .with_second(0)
-                    .unwrap()
+                time_with_timezone(split_values[0], split_values[1])?
             }
         }
         _ => {
@@ -153,7 +144,7 @@ mod tests {
     #[test]
     fn test_process_command_convert() {
         let result = process_command("/convert 12:00 UTC BRT");
-        assert_eq!(result, command_now("12:00 UTC BRT").unwrap());
+        assert_eq!(result, command_convert("12:00 UTC BRT"));
     }
 
     #[test]

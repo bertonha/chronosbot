@@ -1,9 +1,9 @@
 #![allow(non_upper_case_globals)]
 
-use chrono::{DateTime, NaiveTime, Timelike};
+use chrono::{DateTime, NaiveTime, Timelike, Utc};
 use chrono_tz::America::Sao_Paulo;
 use chrono_tz::Europe::{Amsterdam, Bucharest, Madrid};
-use chrono_tz::{ParseError, Tz, CET, EET, UTC};
+use chrono_tz::{ParseError, Tz, CET, EET, EST, UTC};
 use std::error::Error;
 
 pub fn parse_tz(text: &str) -> Result<Tz, ParseError> {
@@ -13,6 +13,7 @@ pub fn parse_tz(text: &str) -> Result<Tz, ParseError> {
             "utc" => Ok(UTC),
             "cet" | "europe" => Ok(CET),
             "eet" => Ok(EET),
+            "est" => Ok(EST),
             "madrid" | "barcelona" | "spain" | "es" => Ok(Madrid),
             "brazil" | "brasil" | "brt" | "br" => Ok(Sao_Paulo),
             "netherlands" | "amsterdam" | "nl" => Ok(Amsterdam),
@@ -59,6 +60,19 @@ pub fn parse_time(text: &str) -> Result<NaiveTime, Box<dyn Error>> {
             }
         },
     }
+}
+
+pub fn time_with_timezone(time: &str, timezone: &str) -> Result<DateTime<Tz>, Box<dyn Error>> {
+    let time = parse_time(time)?;
+    let source_tz = parse_tz(timezone)?;
+    Ok(Utc::now()
+        .with_timezone(&source_tz)
+        .with_hour(time.hour())
+        .unwrap()
+        .with_minute(time.minute())
+        .unwrap()
+        .with_second(0)
+        .unwrap())
 }
 
 #[cfg(test)]
