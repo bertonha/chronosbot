@@ -24,12 +24,7 @@ pub fn parse_tz(text: &str) -> Result<Tz, ParseError> {
 }
 
 pub fn format_time(time: DateTime<Tz>) -> String {
-    let format = if time.second() == 0 {
-        "%H:%M"
-    } else {
-        "%H:%M:%S"
-    };
-    time.format(format).to_string()
+    time.format("%H:%M").to_string()
 }
 
 pub fn format_time_with_timezone(time: DateTime<Tz>) -> String {
