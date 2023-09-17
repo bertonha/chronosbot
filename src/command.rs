@@ -1,15 +1,8 @@
 use std::error::Error;
 
 use chrono::{Timelike, Utc};
-use lazy_static::lazy_static;
-use regex::Regex;
 
 use crate::time::{format_time_with_timezone, parse_time, parse_tz};
-
-lazy_static! {
-    static ref RE_HOUR_TIMEZONE_TIMEZONE: Regex =
-        Regex::new(r"(\d{1,2}:?\d{0,2})\s*(\w*)\s*(\w*)").unwrap();
-}
 
 pub fn process_command(text: &str) -> String {
     let (command, rest) = text.split_once(' ').unwrap_or((text, ""));
@@ -51,35 +44,33 @@ fn now(timezone: &str) -> String {
 }
 
 pub fn convert(input: &str) -> Result<String, Box<dyn Error>> {
-    if let Some(captures) = RE_HOUR_TIMEZONE_TIMEZONE.captures(input) {
-        let source_time = captures.get(1).unwrap().as_str();
-        let source_timezone = captures.get(2).unwrap().as_str();
-        let target_timezone = captures.get(3).unwrap().as_str();
+    let bla = input.split_whitespace().collect::<Vec<&str>>();
 
-        let time = parse_time(source_time)?;
-        let source_tz = parse_tz(source_timezone)?;
-        let target_tz = parse_tz(target_timezone)?;
-
-        let source_time = Utc::now()
-            .with_timezone(&source_tz)
-            .with_hour(time.hour())
-            .unwrap()
-            .with_minute(time.minute())
-            .unwrap()
-            .with_second(0)
-            .unwrap();
-        let target_time = source_time.with_timezone(&target_tz);
-        Ok(format!(
-            "{} - {}",
-            format_time_with_timezone(source_time),
-            format_time_with_timezone(target_time)
-        ))
-    } else {
-        Err(Box::try_from(format!(
+    if bla.len() != 3 {
+        return Err(format!(
             "Invalid pattern. Please follow correct pattern as bellow\n\n{CONVERT_COMMAND_INFO}"
-        ))
-        .unwrap())
+        )
+        .into());
     }
+
+    let time = parse_time(bla[0])?;
+    let source_tz = parse_tz(bla[1])?;
+    let target_tz = parse_tz(bla[2])?;
+
+    let source_time = Utc::now()
+        .with_timezone(&source_tz)
+        .with_hour(time.hour())
+        .unwrap()
+        .with_minute(time.minute())
+        .unwrap()
+        .with_second(0)
+        .unwrap();
+    let target_time = source_time.with_timezone(&target_tz);
+    Ok(format!(
+        "{} - {}",
+        format_time_with_timezone(source_time),
+        format_time_with_timezone(target_time)
+    ))
 }
 
 #[cfg(test)]
