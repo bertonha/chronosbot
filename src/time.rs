@@ -7,19 +7,16 @@ use chrono_tz::{ParseError, Tz, CET, EET, EST, UTC};
 use std::error::Error;
 
 pub fn parse_tz(text: &str) -> Result<Tz, ParseError> {
-    match text.parse() {
-        Ok(tz) => Ok(tz),
-        Err(error) => match text.to_lowercase().as_str() {
-            "utc" => Ok(UTC),
-            "cet" | "europe" => Ok(CET),
-            "eet" => Ok(EET),
-            "est" => Ok(EST),
-            "madrid" | "barcelona" | "spain" | "es" => Ok(Madrid),
-            "brazil" | "brasil" | "brt" | "br" => Ok(Sao_Paulo),
-            "netherlands" | "amsterdam" | "nl" => Ok(Amsterdam),
-            "romania" | "romenia" | "ro" => Ok(Bucharest),
-            _ => Err(error),
-        },
+    match text.to_lowercase().as_str() {
+        "utc" => Ok(UTC),
+        "cet" | "europe" => Ok(CET),
+        "eet" => Ok(EET),
+        "est" => Ok(EST),
+        "madrid" | "barcelona" | "spain" | "es" => Ok(Madrid),
+        "brazil" | "brasil" | "brt" | "br" => Ok(Sao_Paulo),
+        "netherlands" | "amsterdam" | "nl" => Ok(Amsterdam),
+        "romania" | "romenia" | "ro" => Ok(Bucharest),
+        _ => text.parse(),
     }
 }
 
@@ -33,8 +30,7 @@ pub fn format_time_with_timezone(time: DateTime<Tz>) -> String {
 
 pub fn format_timezone(tz: Tz) -> String {
     match tz {
-        UTC => "UTC".to_string(),
-        CET | Madrid | Amsterdam => "CET".to_string(),
+        Madrid | Amsterdam => "CET".to_string(),
         Sao_Paulo => "BRT".to_string(),
         Bucharest => "EET".to_string(),
         _ => tz.to_string(),
