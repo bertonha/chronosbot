@@ -81,22 +81,22 @@ pub struct InlineQuery {
     pub chat_type: String,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct TelegramResponse {
-    method: String,
+    pub method: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    chat_id: Option<i64>,
+    pub chat_id: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    message_id: Option<i64>,
+    pub message_id: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    text: Option<String>,
+    pub text: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    inline_query_id: Option<String>,
+    pub inline_query_id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    results: Option<Vec<InlineQueryResult>>,
+    pub results: Option<Vec<InlineQueryResult>>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct InlineQueryResult {
     #[serde(rename = "type")]
     pub type_: String,
@@ -118,7 +118,7 @@ impl InlineQueryResult {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct InputMessageContent {
     pub message_text: String,
 }
