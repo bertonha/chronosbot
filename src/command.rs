@@ -94,11 +94,23 @@ fn convert_error() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use chrono::Duration;
+    use chrono_tz::OffsetComponents;
+
+    fn now_in_timezone(tz: &Tz) -> DateTime<Tz> {
+        Utc::now().with_timezone(&tz)
+    }
+
+    fn is_dst(tz: &Tz) -> bool {
+        let now = now_in_timezone(&tz);
+        now.offset().dst_offset() == Duration::seconds(0)
+    }
 
     #[test]
     fn test_convert_time_brt_cet() {
+        let cet_hour = if is_dst(&Tz::CET) { 16 } else { 17 };
         let result = command_convert("12:00 BRT CET");
-        assert_eq!(result, "12:00 BRT - 17:00 CET");
+        assert_eq!(result, format!("12:00 BRT - {cet_hour}:00 CET"));
     }
     #[test]
     fn test_convert_time_utc_brl() {
@@ -107,18 +119,21 @@ mod tests {
     }
     #[test]
     fn test_convert_time_one_digit() {
+        let cet_hour = if is_dst(&Tz::CET) { "05" } else { "06" };
         let result = command_convert("1:00 BRT CET");
-        assert_eq!(result, "01:00 BRT - 06:00 CET");
+        assert_eq!(result, format!("01:00 BRT - {cet_hour}:00 CET"));
     }
     #[test]
     fn test_convert_time_minimal() {
+        let cet_hour = if is_dst(&Tz::CET) { "05" } else { "06" };
         let result = command_convert("1 BRT CET");
-        assert_eq!(result, "01:00 BRT - 06:00 CET");
+        assert_eq!(result, format!("01:00 BRT - {cet_hour}:00 CET"));
     }
     #[test]
     fn test_convert_time_multiple_spaces() {
+        let eet_hour = if is_dst(&Tz::EET) { 17 } else { 18 };
         let result = command_convert("12:00    BRT     RO    ");
-        assert_eq!(result, "12:00 BRT - 18:00 EET");
+        assert_eq!(result, format!("12:00 BRT - {eet_hour}:00 EET"));
     }
     #[test]
     fn test_convert_time_missing_target_tz() {
