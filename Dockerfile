@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-ARG RUST_VERSION=1.73.0
+ARG RUST_VERSION=1.74.0
 ARG DEBIAN_VERSION=bookworm
 ARG APP_NAME=chronosbot
 FROM rust:${RUST_VERSION}-slim-${DEBIAN_VERSION} AS build
