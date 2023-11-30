@@ -176,4 +176,43 @@ mod tests {
             RequestType::Unknown
         ));
     }
+
+    #[test]
+    fn test_request_from_request_message() {
+        let request = TelegramRequest {
+            update_id: 0,
+            message: Some(Message {
+                message_id: 0,
+                from: User {
+                    id: 0,
+                    is_bot: false,
+                    first_name: "".into(),
+                    last_name: None,
+                    username: None,
+                    language_code: None,
+                },
+                chat: Chat {
+                    id: 0,
+                    first_name: None,
+                    last_name: None,
+                    username: None,
+                    type_: "".into(),
+                    title: None,
+                    all_members_are_administrators: None,
+                },
+                date: 0,
+                text: None,
+                new_chat_members: None,
+                entities: None,
+                via_bot: None,
+            }),
+            edited_message: None,
+            inline_query: None,
+        };
+
+        assert!(matches!(
+            RequestType::from_request(request),
+            RequestType::Message { .. }
+        ));
+    }
 }
