@@ -157,3 +157,23 @@ impl TelegramResponse {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_request_from_request_unknown() {
+        let request = TelegramRequest {
+            update_id: 0,
+            message: None,
+            edited_message: None,
+            inline_query: None,
+        };
+
+        assert!(matches!(
+            RequestType::from_request(request),
+            RequestType::Unknown
+        ));
+    }
+}
