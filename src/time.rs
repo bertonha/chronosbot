@@ -46,7 +46,7 @@ pub fn parse_time(text: &str) -> Result<NaiveTime, Box<dyn Error>> {
                 let hour = text.parse::<u32>()?;
                 match NaiveTime::from_hms_opt(hour, 0, 0) {
                     Some(time) => Ok(time),
-                    None => Err(Box::try_from(error).unwrap()),
+                    None => Err(Box::new(error)),
                 }
             }
         },
