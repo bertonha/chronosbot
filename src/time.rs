@@ -37,13 +37,18 @@ pub fn format_timezone(tz: Tz) -> String {
     }
 }
 
+fn clean_time(time: &str) -> String {
+    time.replace(['H', 'h'], "")
+}
+
 pub fn parse_time(text: &str) -> Result<NaiveTime, Box<dyn Error>> {
-    match NaiveTime::parse_from_str(text, "%H:%M:%S") {
+    let clean_text = clean_time(text);
+    match NaiveTime::parse_from_str(&clean_text, "%H:%M:%S") {
         Ok(time) => Ok(time),
-        Err(_) => match NaiveTime::parse_from_str(text, "%H:%M") {
+        Err(_) => match NaiveTime::parse_from_str(&clean_text, "%H:%M") {
             Ok(time) => Ok(time),
             Err(error) => {
-                let hour = text.parse::<u32>()?;
+                let hour = clean_text.parse::<u32>()?;
                 match NaiveTime::from_hms_opt(hour, 0, 0) {
                     Some(time) => Ok(time),
                     None => Err(Box::new(error)),
@@ -83,6 +88,11 @@ mod tests {
     #[test]
     fn test_parse_time_hour() {
         let result = parse_time("12");
+        assert_eq!(result.ok(), NaiveTime::from_hms_opt(12, 0, 0));
+    }
+    #[test]
+    fn test_parse_time_hour_with_h() {
+        let result = parse_time("12H");
         assert_eq!(result.ok(), NaiveTime::from_hms_opt(12, 0, 0));
     }
     #[test]

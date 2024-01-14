@@ -160,7 +160,11 @@ mod tests {
         let result = process_command("/convert 12:00 UTC BRT");
         assert_eq!(result, command_convert("12:00 UTC BRT"));
     }
-
+    #[test]
+    fn test_process_command_with_h_convert() {
+        let result = process_command("/convert 12h UTC BRT");
+        assert_eq!(result, command_convert("12:00 UTC BRT"));
+    }
     #[test]
     fn test_process_command_invalid() {
         let result = process_command("invalid");
