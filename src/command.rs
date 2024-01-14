@@ -1,9 +1,11 @@
 use std::error::Error;
 
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, NaiveTime, Utc};
 use chrono_tz::{ParseError, Tz};
 
-use crate::time::{format_time_with_timezone, parse_tz, time_with_timezone};
+use crate::time::{
+    format_time_with_timezone, parse_time, parse_time_with_timezone, parse_tz, time_with_timezone,
+};
 
 pub fn process_command(text: &str) -> String {
     let (command, rest) = text.split_once(' ').unwrap_or((text, ""));
@@ -42,7 +44,7 @@ fn command_now(timezone: &str) -> String {
 }
 
 fn command_convert(input: &str) -> String {
-    convert(input).unwrap_or_else(|e| e.to_string())
+    convert_time_with_timezones(input).unwrap_or_else(|e| e.to_string())
 }
 
 fn now(timezone: &str) -> Result<DateTime<Tz>, ParseError> {
@@ -50,13 +52,13 @@ fn now(timezone: &str) -> Result<DateTime<Tz>, ParseError> {
     Ok(Utc::now().with_timezone(&tz))
 }
 
-pub fn convert(input: &str) -> Result<String, Box<dyn Error>> {
+pub fn convert_time_with_timezones(input: &str) -> Result<String, Box<dyn Error>> {
     let split_values = input.split_whitespace().collect::<Vec<&str>>();
-    let time_index;
+    let dst_tz_index;
 
-    let source_time = match split_values.len() {
+    let src_time = match split_values.len() {
         2 => {
-            time_index = 1;
+            dst_tz_index = 1;
             match now(split_values[0]) {
                 Ok(time) => time,
                 Err(_) => {
@@ -65,11 +67,11 @@ pub fn convert(input: &str) -> Result<String, Box<dyn Error>> {
             }
         }
         3 => {
-            time_index = 2;
+            dst_tz_index = 2;
             if split_values[0] == "now" {
                 now(split_values[1])?
             } else {
-                time_with_timezone(split_values[0], split_values[1])?
+                parse_time_with_timezone(split_values[0], split_values[1])?
             }
         }
         _ => {
@@ -77,14 +79,35 @@ pub fn convert(input: &str) -> Result<String, Box<dyn Error>> {
         }
     };
 
-    let target_tz = parse_tz(split_values[time_index])?;
+    let dst_tz = parse_tz(split_values[dst_tz_index])?;
+    let dst_time = src_time.with_timezone(&dst_tz);
+    Ok(format_2times(src_time, dst_time))
+}
 
-    let target_time = source_time.with_timezone(&target_tz);
-    Ok(format!(
+fn format_2times(time1: DateTime<Tz>, time2: DateTime<Tz>) -> String {
+    format!(
         "{} - {}",
-        format_time_with_timezone(source_time),
-        format_time_with_timezone(target_time)
-    ))
+        format_time_with_timezone(time1),
+        format_time_with_timezone(time2),
+    )
+}
+
+fn convert_time(src_time: NaiveTime, src_tz: Tz, dst_tz: Tz) -> String {
+    let src_time = time_with_timezone(src_time, src_tz);
+    let dst_time = src_time.with_timezone(&dst_tz);
+    format_2times(src_time, dst_time)
+}
+
+pub fn convert_time_between_timezones(
+    src_text: &str,
+    src_tz: Tz,
+    dst_tz: Tz,
+) -> Result<[String; 2], Box<dyn Error>> {
+    let src_time = parse_time(src_text)?;
+    Ok([
+        convert_time(src_time, src_tz, dst_tz),
+        convert_time(src_time, dst_tz, src_tz),
+    ])
 }
 
 fn convert_error() -> String {

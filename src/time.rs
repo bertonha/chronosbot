@@ -58,17 +58,24 @@ pub fn parse_time(text: &str) -> Result<NaiveTime, Box<dyn Error>> {
     }
 }
 
-pub fn time_with_timezone(time: &str, timezone: &str) -> Result<DateTime<Tz>, Box<dyn Error>> {
+pub fn parse_time_with_timezone(
+    time: &str,
+    timezone: &str,
+) -> Result<DateTime<Tz>, Box<dyn Error>> {
     let time = parse_time(time)?;
     let source_tz = parse_tz(timezone)?;
-    Ok(Utc::now()
-        .with_timezone(&source_tz)
+    Ok(time_with_timezone(time, source_tz))
+}
+
+pub fn time_with_timezone(time: NaiveTime, tz: Tz) -> DateTime<Tz> {
+    let now = Utc::now();
+    now.with_timezone(&tz)
         .with_hour(time.hour())
         .unwrap()
         .with_minute(time.minute())
         .unwrap()
         .with_second(0)
-        .unwrap())
+        .unwrap()
 }
 
 #[cfg(test)]

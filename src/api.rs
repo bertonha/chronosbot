@@ -2,9 +2,13 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
+use chrono_tz::America::Sao_Paulo;
+use chrono_tz::Tz::CET;
 use tower_http::trace::TraceLayer;
 
-use crate::command::{convert, process_command};
+use crate::command::{
+    convert_time_between_timezones, convert_time_with_timezones, process_command,
+};
 use crate::telegram::{InlineQueryResult, RequestType, TelegramRequest, TelegramResponse};
 
 async fn welcome() -> &'static str {
@@ -38,13 +42,25 @@ async fn receive_message(Json(payload): Json<TelegramRequest>) -> Json<Option<Te
             None => None,
         },
 
-        RequestType::InlineQuery(inline) => match convert(inline.query.trim()) {
-            Ok(converted) => Some(TelegramResponse::answer_inline_query(
-                inline.id,
-                vec![InlineQueryResult::article("1".into(), converted)],
-            )),
-            Err(_) => None,
-        },
+        RequestType::InlineQuery(inline) => {
+            match convert_time_with_timezones(inline.query.trim()) {
+                Ok(converted) => Some(TelegramResponse::answer_inline_query(
+                    inline.id,
+                    vec![InlineQueryResult::article("1".into(), converted)],
+                )),
+                Err(_) => match convert_time_between_timezones(inline.query.trim(), CET, Sao_Paulo)
+                {
+                    Ok(times) => Some(TelegramResponse::answer_inline_query(
+                        inline.id,
+                        vec![
+                            InlineQueryResult::article("1".into(), times[0].clone()),
+                            InlineQueryResult::article("2".into(), times[1].clone()),
+                        ],
+                    )),
+                    Err(_) => None,
+                },
+            }
+        }
 
         RequestType::Unknown => None,
     };
