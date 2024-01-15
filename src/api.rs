@@ -5,6 +5,7 @@ use axum::{
 use chrono_tz::America::Sao_Paulo;
 use chrono_tz::Tz::CET;
 use tower_http::trace::TraceLayer;
+use uuid::Uuid;
 
 use crate::command::{
     convert_time_between_timezones, convert_time_with_timezones, process_command,
@@ -46,17 +47,21 @@ async fn receive_message(Json(payload): Json<TelegramRequest>) -> Json<Option<Te
             match convert_time_with_timezones(inline.query.trim()) {
                 Ok(converted) => Some(TelegramResponse::answer_inline_query(
                     inline.id,
-                    vec![InlineQueryResult::article("1".into(), converted)],
+                    vec![InlineQueryResult::article(
+                        Uuid::new_v4().to_string(),
+                        converted,
+                    )],
                 )),
                 Err(_) => match convert_time_between_timezones(inline.query.trim(), CET, Sao_Paulo)
                 {
-                    Ok(times) => Some(TelegramResponse::answer_inline_query(
-                        inline.id,
-                        vec![
-                            InlineQueryResult::article("1".into(), times[0].clone()),
-                            InlineQueryResult::article("2".into(), times[1].clone()),
-                        ],
-                    )),
+                    Ok(times) => {
+                        let mut results = Vec::new();
+                        for time in times {
+                            results
+                                .push(InlineQueryResult::article(Uuid::new_v4().to_string(), time));
+                        }
+                        Some(TelegramResponse::answer_inline_query(inline.id, results))
+                    }
                     Err(_) => None,
                 },
             }
