@@ -78,7 +78,7 @@ pub struct InlineQuery {
     pub from: User,
     pub query: String,
     pub offset: String,
-    pub chat_type: String,
+    pub chat_type: Option<String>,
 }
 
 #[derive(Serialize, Deserialize)]
