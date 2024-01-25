@@ -16,6 +16,8 @@ async fn welcome() -> &'static str {
 }
 
 async fn receive_message(Json(payload): Json<TelegramRequest>) -> Json<Option<TelegramResponse>> {
+    tracing::debug!("{:?}", payload);
+
     let response = match RequestType::from_request(payload) {
         RequestType::Message(message) => {
             if let Some(via_bot) = message.via_bot {
