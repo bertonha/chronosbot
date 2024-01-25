@@ -13,7 +13,7 @@ async fn main() {
             tracing_subscriber::EnvFilter::try_from_default_env()
                 .unwrap_or_else(|_| "chronosbot=debug,tower_http=debug".into()),
         )
-        .with(tracing_subscriber::fmt::layer())
+        .with(tracing_subscriber::fmt::layer().json())
         .init();
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
