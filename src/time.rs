@@ -5,6 +5,7 @@ use chrono_tz::America::Sao_Paulo;
 use chrono_tz::Europe::{Amsterdam, Bucharest, Madrid};
 use chrono_tz::{ParseError, Tz, CET, EET, EST, UTC};
 use std::error::Error;
+use std::str::FromStr;
 
 pub fn parse_tz(text: &str) -> Result<Tz, ParseError> {
     match text.to_lowercase().as_str() {
@@ -43,18 +44,12 @@ fn clean_time(time: &str) -> String {
 
 pub fn parse_time(text: &str) -> Result<NaiveTime, Box<dyn Error>> {
     let clean_text = clean_time(text);
-    match NaiveTime::parse_from_str(&clean_text, "%H:%M:%S") {
+    match NaiveTime::from_str(&clean_text) {
         Ok(time) => Ok(time),
-        Err(_) => match NaiveTime::parse_from_str(&clean_text, "%H:%M") {
-            Ok(time) => Ok(time),
-            Err(error) => {
-                let hour = clean_text.parse::<u32>()?;
-                match NaiveTime::from_hms_opt(hour, 0, 0) {
-                    Some(time) => Ok(time),
-                    None => Err(Box::new(error)),
-                }
-            }
-        },
+        Err(error) => {
+            let hour = clean_text.parse::<u32>()?;
+            NaiveTime::from_hms_opt(hour, 0, 0).ok_or(error.into())
+        }
     }
 }
 
@@ -113,22 +108,16 @@ pub fn parse_time_for_timezones(
 
 pub fn parse_time_with_timezones(input: &str) -> Result<String, Box<dyn Error>> {
     let split_values: Vec<&str> = input.split_whitespace().collect();
-    let src_time;
-    let timezone_start_index;
 
-    match split_values.len() {
-        2 => {
-            src_time = naive_now();
-            timezone_start_index = 0;
-        }
-        _ => {
-            if split_values[0] == "now" {
-                src_time = naive_now();
-            } else {
-                src_time = parse_time(split_values[0])?
-            }
-            timezone_start_index = 1;
-        }
+    let (src_time, timezone_start_index) = if split_values.len() == 2 {
+        (naive_now(), 0)
+    } else {
+        let src_time = if split_values[0] == "now" {
+            naive_now()
+        } else {
+            parse_time(split_values[0])?
+        };
+        (src_time, 1)
     };
 
     let timezones = split_values
@@ -136,13 +125,12 @@ pub fn parse_time_with_timezones(input: &str) -> Result<String, Box<dyn Error>> 
         .skip(timezone_start_index)
         .map(parse_tz)
         .collect::<Result<Vec<_>, _>>()?;
-    if timezones.len() < 2 {
-        return Err("Not enough timezones provided".into());
-    }
-    Ok(convert_time_between_timezones(src_time, timezones)
-        .take(1)
+
+    let result = convert_time_between_timezones(src_time, timezones)
         .next()
-        .unwrap())
+        .ok_or("No result found")?;
+
+    Ok(result)
 }
 
 fn naive_now() -> NaiveTime {
