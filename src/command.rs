@@ -18,9 +18,9 @@ pub fn process_command(text: &str) -> String {
 }
 
 pub fn convert_time_between_timezones(src_text: &str) -> Result<Vec<String>, Box<dyn Error>> {
-    match convert_time_with_timezones(src_text) {
+    match time::parse_time_with_timezones(src_text) {
         Ok(converted) => Ok(vec![converted]),
-        Err(_) => time::convert_time_between_timezones(src_text, vec![CET, Sao_Paulo]),
+        Err(_) => time::parse_time_for_timezones(src_text, vec![CET, Sao_Paulo]),
     }
 }
 
@@ -51,44 +51,12 @@ fn command_now(timezone: &str) -> String {
 }
 
 fn command_convert(input: &str) -> String {
-    convert_time_with_timezones(input).unwrap_or_else(|e| e.to_string())
+    time::parse_time_with_timezones(input).unwrap_or_else(|_| convert_error())
 }
 
 fn now(timezone: &str) -> Result<DateTime<Tz>, ParseError> {
     let tz = time::parse_tz(timezone.trim())?;
     Ok(Utc::now().with_timezone(&tz))
-}
-
-fn convert_time_with_timezones(input: &str) -> Result<String, Box<dyn Error>> {
-    let split_values = input.split_whitespace().collect::<Vec<&str>>();
-    let dst_tz_index;
-
-    let src_time = match split_values.len() {
-        2 => {
-            dst_tz_index = 1;
-            match now(split_values[0]) {
-                Ok(time) => time,
-                Err(_) => {
-                    return Err(convert_error().into());
-                }
-            }
-        }
-        3 => {
-            dst_tz_index = 2;
-            if split_values[0] == "now" {
-                now(split_values[1])?
-            } else {
-                time::parse_time_with_timezone(split_values[0], split_values[1])?
-            }
-        }
-        _ => {
-            return Err(convert_error().into());
-        }
-    };
-
-    let dst_tz = time::parse_tz(split_values[dst_tz_index])?;
-    let dst_time = src_time.with_timezone(&dst_tz);
-    Ok(time::format_times(vec![src_time, dst_time]))
 }
 
 fn convert_error() -> String {
