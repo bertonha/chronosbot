@@ -103,7 +103,11 @@ pub fn parse_time_for_timezones(
     src_text: &str,
     timezones: Vec<Tz>,
 ) -> Result<Vec<String>, Box<dyn Error>> {
-    let src_time = parse_time(src_text)?;
+    let src_time = if src_text.is_empty() {
+        naive_now()
+    } else {
+        parse_time(src_text)?
+    };
     Ok(convert_time_between_timezones(src_time, timezones).collect())
 }
 
