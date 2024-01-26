@@ -106,13 +106,13 @@ pub struct InlineQueryResult {
 }
 
 impl InlineQueryResult {
-    pub fn article(id: String, content: String) -> Self {
+    pub fn article(id: String, title: String) -> Self {
         Self {
             type_: "article".into(),
-            id: id.clone(),
-            title: id,
+            id,
+            title: title.clone(),
             input_message_content: InputMessageContent {
-                message_text: content,
+                message_text: title,
             },
         }
     }
