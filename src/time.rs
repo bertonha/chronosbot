@@ -78,11 +78,10 @@ pub fn format_times(times: Vec<DateTime<Tz>>) -> String {
 }
 
 pub fn convert_time_between_timezones(src_time: NaiveTime, timezones: Vec<Tz>) -> Vec<String> {
-    let mut results = Vec::new();
-    for src_tz in &timezones {
-        results.push(convert_datetime_to_timezones(src_time, src_tz, &timezones));
-    }
-    results
+    timezones
+        .iter()
+        .map(|src_tz| convert_datetime_to_timezones(src_time, src_tz, &timezones))
+        .collect()
 }
 
 fn convert_datetime_to_timezones(src_time: NaiveTime, src_tz: &Tz, timezones: &Vec<Tz>) -> String {
