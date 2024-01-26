@@ -18,9 +18,9 @@ pub fn process_command(text: &str) -> String {
 }
 
 pub fn convert_time_between_timezones(src_text: &str) -> Result<Vec<String>, Box<dyn Error>> {
-    match time::parse_time_with_timezones(src_text) {
-        Ok(converted) => Ok(vec![converted]),
-        Err(_) => time::parse_time_for_timezones(src_text, vec![CET, Sao_Paulo]),
+    match time::parse_time_for_timezones(src_text, vec![CET, Sao_Paulo]) {
+        Ok(converted) => Ok(converted),
+        Err(_) => time::parse_time_with_timezones(src_text).map(|converted| vec![converted]),
     }
 }
 
@@ -45,7 +45,7 @@ fn command_start() -> String {
 
 fn command_now(timezone: &str) -> String {
     match now(timezone) {
-        Ok(time) => time::format_time_with_timezone(&time),
+        Ok(time) => time::format_time_with_timezone(time),
         Err(error) => error.to_string(),
     }
 }

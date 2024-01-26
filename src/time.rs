@@ -20,11 +20,11 @@ pub fn parse_tz(text: &str) -> Result<Tz, ParseError> {
     }
 }
 
-pub fn format_time(time: &DateTime<Tz>) -> String {
+pub fn format_time(time: DateTime<Tz>) -> String {
     time.format("%H:%M").to_string()
 }
 
-pub fn format_time_with_timezone(time: &DateTime<Tz>) -> String {
+pub fn format_time_with_timezone(time: DateTime<Tz>) -> String {
     format!("{} {}", format_time(time), format_timezone(time.timezone()))
 }
 
@@ -58,9 +58,9 @@ pub fn parse_time(text: &str) -> Result<NaiveTime, Box<dyn Error>> {
     }
 }
 
-pub fn time_with_timezone(time: NaiveTime, tz: &Tz) -> DateTime<Tz> {
+pub fn time_with_timezone(time: NaiveTime, tz: Tz) -> DateTime<Tz> {
     let now = Utc::now();
-    now.with_timezone(tz)
+    now.with_timezone(&tz)
         .with_hour(time.hour())
         .unwrap()
         .with_minute(time.minute())
@@ -71,24 +71,27 @@ pub fn time_with_timezone(time: NaiveTime, tz: &Tz) -> DateTime<Tz> {
 
 pub fn format_times(times: Vec<DateTime<Tz>>) -> String {
     times
-        .iter()
+        .into_iter()
         .map(format_time_with_timezone)
         .collect::<Vec<_>>()
         .join(" - ")
 }
 
-pub fn convert_time_between_timezones(src_time: NaiveTime, timezones: Vec<Tz>) -> Vec<String> {
+pub fn convert_time_between_timezones(
+    src_time: NaiveTime,
+    timezones: Vec<Tz>,
+) -> impl Iterator<Item = String> {
     timezones
-        .iter()
-        .map(|src_tz| convert_datetime_to_timezones(src_time, src_tz, &timezones))
-        .collect()
+        .clone()
+        .into_iter()
+        .map(move |tz| convert_datetime_to_timezones(src_time, tz, &timezones))
 }
 
-fn convert_datetime_to_timezones(src_time: NaiveTime, src_tz: &Tz, timezones: &Vec<Tz>) -> String {
+fn convert_datetime_to_timezones(src_time: NaiveTime, src_tz: Tz, timezones: &[Tz]) -> String {
     let src_time = time_with_timezone(src_time, src_tz);
     let mut times = vec![src_time];
     for dst_tz in timezones {
-        if src_tz == dst_tz {
+        if src_tz == *dst_tz {
             continue;
         }
         times.push(src_time.with_timezone(dst_tz));
@@ -101,11 +104,11 @@ pub fn parse_time_for_timezones(
     timezones: Vec<Tz>,
 ) -> Result<Vec<String>, Box<dyn Error>> {
     let src_time = parse_time(src_text)?;
-    Ok(convert_time_between_timezones(src_time, timezones))
+    Ok(convert_time_between_timezones(src_time, timezones).collect())
 }
 
 pub fn parse_time_with_timezones(input: &str) -> Result<String, Box<dyn Error>> {
-    let split_values: Vec<&str> = input.split_whitespace().collect::<_>();
+    let split_values: Vec<&str> = input.split_whitespace().collect();
     let src_time;
     let timezone_start_index;
 
@@ -124,7 +127,7 @@ pub fn parse_time_with_timezones(input: &str) -> Result<String, Box<dyn Error>> 
         }
     };
 
-    let mut timezones = split_values
+    let timezones = split_values
         .into_iter()
         .skip(timezone_start_index)
         .map(parse_tz)
@@ -132,8 +135,10 @@ pub fn parse_time_with_timezones(input: &str) -> Result<String, Box<dyn Error>> 
     if timezones.len() < 2 {
         return Err("Not enough timezones provided".into());
     }
-    let src_tz = timezones.remove(0);
-    Ok(convert_datetime_to_timezones(src_time, &src_tz, &timezones))
+    Ok(convert_time_between_timezones(src_time, timezones)
+        .take(1)
+        .next()
+        .unwrap())
 }
 
 fn naive_now() -> NaiveTime {
@@ -185,13 +190,10 @@ mod tests {
             vec![CET, Sao_Paulo, EET],
         );
 
-        assert_eq!(
-            result,
-            vec![
-                "12:00 CET - 08:00 BRT - 13:00 EET",
-                "12:00 BRT - 16:00 CET - 17:00 EET",
-                "12:00 EET - 11:00 CET - 07:00 BRT",
-            ],
-        );
+        assert!(result.eq([
+            "12:00 CET - 08:00 BRT - 13:00 EET",
+            "12:00 BRT - 16:00 CET - 17:00 EET",
+            "12:00 EET - 11:00 CET - 07:00 BRT",
+        ]));
     }
 }
