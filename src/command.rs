@@ -1,11 +1,11 @@
 use std::error::Error;
 
-use chrono::{DateTime, NaiveTime, Utc};
+use chrono::{DateTime, Utc};
+use chrono_tz::America::Sao_Paulo;
+use chrono_tz::Tz::CET;
 use chrono_tz::{ParseError, Tz};
 
-use crate::time::{
-    format_time_with_timezone, parse_time, parse_time_with_timezone, parse_tz, time_with_timezone,
-};
+use crate::time;
 
 pub fn process_command(text: &str) -> String {
     let (command, rest) = text.split_once(' ').unwrap_or((text, ""));
@@ -14,6 +14,13 @@ pub fn process_command(text: &str) -> String {
         "/now" => command_now(rest),
         "/convert" => command_convert(rest),
         _ => invalid_command(),
+    }
+}
+
+pub fn convert_time_between_timezones(src_text: &str) -> Result<Vec<String>, Box<dyn Error>> {
+    match convert_time_with_timezones(src_text) {
+        Ok(converted) => Ok(vec![converted]),
+        Err(_) => time::convert_time_between_timezones(src_text, vec![CET, Sao_Paulo]),
     }
 }
 
@@ -38,7 +45,7 @@ fn command_start() -> String {
 
 fn command_now(timezone: &str) -> String {
     match now(timezone) {
-        Ok(time) => format_time_with_timezone(time),
+        Ok(time) => time::format_time_with_timezone(&time),
         Err(error) => error.to_string(),
     }
 }
@@ -48,11 +55,11 @@ fn command_convert(input: &str) -> String {
 }
 
 fn now(timezone: &str) -> Result<DateTime<Tz>, ParseError> {
-    let tz = parse_tz(timezone.trim())?;
+    let tz = time::parse_tz(timezone.trim())?;
     Ok(Utc::now().with_timezone(&tz))
 }
 
-pub fn convert_time_with_timezones(input: &str) -> Result<String, Box<dyn Error>> {
+fn convert_time_with_timezones(input: &str) -> Result<String, Box<dyn Error>> {
     let split_values = input.split_whitespace().collect::<Vec<&str>>();
     let dst_tz_index;
 
@@ -71,7 +78,7 @@ pub fn convert_time_with_timezones(input: &str) -> Result<String, Box<dyn Error>
             if split_values[0] == "now" {
                 now(split_values[1])?
             } else {
-                parse_time_with_timezone(split_values[0], split_values[1])?
+                time::parse_time_with_timezone(split_values[0], split_values[1])?
             }
         }
         _ => {
@@ -79,35 +86,9 @@ pub fn convert_time_with_timezones(input: &str) -> Result<String, Box<dyn Error>
         }
     };
 
-    let dst_tz = parse_tz(split_values[dst_tz_index])?;
+    let dst_tz = time::parse_tz(split_values[dst_tz_index])?;
     let dst_time = src_time.with_timezone(&dst_tz);
-    Ok(format_2times(src_time, dst_time))
-}
-
-fn format_2times(time1: DateTime<Tz>, time2: DateTime<Tz>) -> String {
-    format!(
-        "{} - {}",
-        format_time_with_timezone(time1),
-        format_time_with_timezone(time2),
-    )
-}
-
-fn convert_time(src_time: NaiveTime, src_tz: Tz, dst_tz: Tz) -> String {
-    let src_time = time_with_timezone(src_time, src_tz);
-    let dst_time = src_time.with_timezone(&dst_tz);
-    format_2times(src_time, dst_time)
-}
-
-pub fn convert_time_between_timezones(
-    src_text: &str,
-    src_tz: Tz,
-    dst_tz: Tz,
-) -> Result<[String; 2], Box<dyn Error>> {
-    let src_time = parse_time(src_text)?;
-    Ok([
-        convert_time(src_time, src_tz, dst_tz),
-        convert_time(src_time, dst_tz, src_tz),
-    ])
+    Ok(time::format_times(vec![src_time, dst_time]))
 }
 
 fn convert_error() -> String {
@@ -120,18 +101,14 @@ mod tests {
     use chrono::Duration;
     use chrono_tz::OffsetComponents;
 
-    fn now_in_timezone(tz: &Tz) -> DateTime<Tz> {
-        Utc::now().with_timezone(&tz)
-    }
-
-    fn is_dst(tz: &Tz) -> bool {
-        let now = now_in_timezone(&tz);
+    pub fn is_dst(tz: Tz) -> bool {
+        let now = Utc::now().with_timezone(&tz);
         now.offset().dst_offset() == Duration::seconds(0)
     }
 
     #[test]
     fn test_convert_time_brt_cet() {
-        let cet_hour = if is_dst(&Tz::CET) { 16 } else { 17 };
+        let cet_hour = if is_dst(Tz::CET) { 16 } else { 17 };
         let result = command_convert("12:00 BRT CET");
         assert_eq!(result, format!("12:00 BRT - {cet_hour}:00 CET"));
     }
@@ -142,19 +119,19 @@ mod tests {
     }
     #[test]
     fn test_convert_time_one_digit() {
-        let cet_hour = if is_dst(&Tz::CET) { "05" } else { "06" };
+        let cet_hour = if is_dst(Tz::CET) { "05" } else { "06" };
         let result = command_convert("1:00 BRT CET");
         assert_eq!(result, format!("01:00 BRT - {cet_hour}:00 CET"));
     }
     #[test]
     fn test_convert_time_minimal() {
-        let cet_hour = if is_dst(&Tz::CET) { "05" } else { "06" };
+        let cet_hour = if is_dst(Tz::CET) { "05" } else { "06" };
         let result = command_convert("1 BRT CET");
         assert_eq!(result, format!("01:00 BRT - {cet_hour}:00 CET"));
     }
     #[test]
     fn test_convert_time_multiple_spaces() {
-        let eet_hour = if is_dst(&Tz::EET) { 17 } else { 18 };
+        let eet_hour = if is_dst(Tz::EET) { 17 } else { 18 };
         let result = command_convert("12:00    BRT     RO    ");
         assert_eq!(result, format!("12:00 BRT - {eet_hour}:00 EET"));
     }

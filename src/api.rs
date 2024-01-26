@@ -2,13 +2,9 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
-use chrono_tz::America::Sao_Paulo;
-use chrono_tz::Tz::CET;
 use tower_http::trace::TraceLayer;
 
-use crate::command::{
-    convert_time_between_timezones, convert_time_with_timezones, process_command,
-};
+use crate::command::{convert_time_between_timezones, process_command};
 use crate::telegram::{InlineQueryResult, RequestType, TelegramRequest, TelegramResponse};
 
 async fn welcome() -> &'static str {
@@ -45,22 +41,15 @@ async fn receive_message(Json(payload): Json<TelegramRequest>) -> Json<Option<Te
         },
 
         RequestType::InlineQuery(inline) => {
-            match convert_time_with_timezones(inline.query.trim()) {
-                Ok(converted) => Some(TelegramResponse::answer_inline_query(
-                    inline.id,
-                    vec![InlineQueryResult::article("1".to_string(), converted)],
-                )),
-                Err(_) => match convert_time_between_timezones(inline.query.trim(), CET, Sao_Paulo)
-                {
-                    Ok(times) => {
-                        let mut results = Vec::new();
-                        for (idx, time) in times.into_iter().enumerate() {
-                            results.push(InlineQueryResult::article(idx.to_string(), time));
-                        }
-                        Some(TelegramResponse::answer_inline_query(inline.id, results))
+            match convert_time_between_timezones(inline.query.trim()) {
+                Ok(times) => {
+                    let mut results = Vec::new();
+                    for (idx, time) in times.into_iter().enumerate() {
+                        results.push(InlineQueryResult::article(idx.to_string(), time));
                     }
-                    Err(_) => None,
-                },
+                    Some(TelegramResponse::answer_inline_query(inline.id, results))
+                }
+                Err(_) => None,
             }
         }
 
@@ -101,7 +90,6 @@ mod tests {
         let body = response.into_body().collect().await.unwrap().to_bytes();
         assert_eq!(&body[..], b"<h1>Welcome!</h1>");
     }
-
     #[tokio::test]
     async fn test_receive_message() {
         let app = app();
@@ -147,5 +135,44 @@ mod tests {
         assert_eq!(data.chat_id, Some(123));
         assert_eq!(data.method, "sendMessage".to_string());
         assert_eq!(data.text, Some("Welcome!\n\nCommands accepted:\n/start\n/now <timezone>\n/convert <time> <source_timezone> <target_timezone>".into()));
+    }
+    #[tokio::test]
+    async fn test_receive_inline_message() {
+        let app = app();
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::POST)
+                    .uri("/")
+                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                    .body(Body::from(
+                        json!(
+                            {
+                                "update_id": 123,
+                                "inline_query": {
+                                    "id": "123",
+                                    "from": {
+                                        "id": 123,
+                                        "is_bot": false,
+                                        "first_name": "John",
+                                    },
+                                    "query": "12",
+                                    "offset": "",
+                                }
+                            }
+                        )
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response.into_body().collect().await.unwrap().to_bytes();
+        let data: TelegramResponse = serde_json::from_slice(&body).unwrap();
+        assert_eq!(data.method, "answerInlineQuery".to_string());
+        assert_eq!(data.results.unwrap().len(), 2);
     }
 }

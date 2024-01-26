@@ -20,11 +20,11 @@ pub fn parse_tz(text: &str) -> Result<Tz, ParseError> {
     }
 }
 
-pub fn format_time(time: DateTime<Tz>) -> String {
+pub fn format_time(time: &DateTime<Tz>) -> String {
     time.format("%H:%M").to_string()
 }
 
-pub fn format_time_with_timezone(time: DateTime<Tz>) -> String {
+pub fn format_time_with_timezone(time: &DateTime<Tz>) -> String {
     format!("{} {}", format_time(time), format_timezone(time.timezone()))
 }
 
@@ -64,18 +64,50 @@ pub fn parse_time_with_timezone(
 ) -> Result<DateTime<Tz>, Box<dyn Error>> {
     let time = parse_time(time)?;
     let source_tz = parse_tz(timezone)?;
-    Ok(time_with_timezone(time, source_tz))
+    Ok(time_with_timezone(time, &source_tz))
 }
 
-pub fn time_with_timezone(time: NaiveTime, tz: Tz) -> DateTime<Tz> {
+pub fn time_with_timezone(time: NaiveTime, tz: &Tz) -> DateTime<Tz> {
     let now = Utc::now();
-    now.with_timezone(&tz)
+    now.with_timezone(tz)
         .with_hour(time.hour())
         .unwrap()
         .with_minute(time.minute())
         .unwrap()
         .with_second(0)
         .unwrap()
+}
+
+pub fn format_times(times: Vec<DateTime<Tz>>) -> String {
+    times
+        .iter()
+        .map(format_time_with_timezone)
+        .collect::<Vec<_>>()
+        .join(" - ")
+}
+
+pub fn convert_time(src_time: NaiveTime, timezones: Vec<Tz>) -> Vec<String> {
+    let mut results = Vec::new();
+    for src_tz in &timezones {
+        let src_time = time_with_timezone(src_time, src_tz);
+        let mut times = vec![src_time];
+        for dst_tz in &timezones {
+            if src_tz == dst_tz {
+                continue;
+            }
+            times.push(src_time.with_timezone(dst_tz));
+        }
+        results.push(format_times(times));
+    }
+    results
+}
+
+pub fn convert_time_between_timezones(
+    src_text: &str,
+    timezones: Vec<Tz>,
+) -> Result<Vec<String>, Box<dyn Error>> {
+    let src_time = parse_time(src_text)?;
+    Ok(convert_time(src_time, timezones))
 }
 
 #[cfg(test)]
@@ -115,5 +147,21 @@ mod tests {
         assert_eq!(result, Ok(Sao_Paulo));
         let result = parse_tz("CET");
         assert_eq!(result, Ok(CET));
+    }
+    #[test]
+    fn test_convert_time() {
+        let result = convert_time(
+            NaiveTime::from_hms_opt(12, 0, 0).unwrap(),
+            vec![CET, Sao_Paulo, EET],
+        );
+
+        assert_eq!(
+            result,
+            vec![
+                "12:00 CET - 08:00 BRT - 13:00 EET",
+                "12:00 BRT - 16:00 CET - 17:00 EET",
+                "12:00 EET - 11:00 CET - 07:00 BRT",
+            ],
+        );
     }
 }
