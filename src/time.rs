@@ -125,10 +125,11 @@ pub fn parse_time_with_timezones(input: &str) -> Result<String, Box<dyn Error>> 
         }
     };
 
-    let mut timezones = Vec::new();
-    for tz in split_values.iter().skip(timezone_start_index) {
-        timezones.push(parse_tz(tz)?);
-    }
+    let mut timezones = split_values
+        .into_iter()
+        .skip(timezone_start_index)
+        .map(parse_tz)
+        .collect::<Result<Vec<_>, _>>()?;
     if timezones.len() < 2 {
         return Err("Not enough timezones provided".into());
     }

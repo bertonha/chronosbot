@@ -43,10 +43,11 @@ async fn receive_message(Json(payload): Json<TelegramRequest>) -> Json<Option<Te
         RequestType::InlineQuery(inline) => {
             match convert_time_between_timezones(inline.query.trim()) {
                 Ok(times) => {
-                    let mut results = Vec::new();
-                    for (idx, time) in times.into_iter().enumerate() {
-                        results.push(InlineQueryResult::article(idx.to_string(), time));
-                    }
+                    let results = times
+                        .into_iter()
+                        .enumerate()
+                        .map(|(idx, time)| InlineQueryResult::article(idx.to_string(), time))
+                        .collect::<_>();
                     Some(TelegramResponse::answer_inline_query(inline.id, results))
                 }
                 Err(_) => None,
