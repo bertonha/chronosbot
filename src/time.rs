@@ -1,11 +1,12 @@
 #![allow(non_upper_case_globals)]
 
+use std::error::Error;
+use std::str::FromStr;
+
 use chrono::{DateTime, NaiveTime, Timelike, Utc};
 use chrono_tz::America::Sao_Paulo;
 use chrono_tz::Europe::{Amsterdam, Bucharest, Madrid};
 use chrono_tz::{ParseError, Tz, CET, EET, EST, UTC};
-use std::error::Error;
-use std::str::FromStr;
 
 pub fn parse_tz(text: &str) -> Result<Tz, ParseError> {
     match text.to_lowercase().as_str() {
