@@ -1,5 +1,6 @@
-use crate::api::app;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+
+use crate::api::app;
 
 mod api;
 mod command;

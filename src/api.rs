@@ -91,6 +91,7 @@ mod tests {
         let body = response.into_body().collect().await.unwrap().to_bytes();
         assert_eq!(&body[..], b"<h1>Welcome!</h1>");
     }
+
     #[tokio::test]
     async fn test_receive_message() {
         let app = app();
@@ -137,6 +138,7 @@ mod tests {
         assert_eq!(data.method, "sendMessage".to_string());
         assert_eq!(data.text, Some("Welcome!\n\nCommands accepted:\n/start\n/now <timezone>\n/convert <time> <source_timezone> <target_timezone>".into()));
     }
+
     #[tokio::test]
     async fn test_receive_inline_message() {
         let app = app();

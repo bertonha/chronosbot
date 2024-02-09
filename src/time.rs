@@ -147,26 +147,31 @@ mod tests {
         let result = parse_time("12:13:45");
         assert_eq!(result.ok(), NaiveTime::from_hms_opt(12, 13, 45));
     }
+
     #[test]
     fn test_parse_time_hour_minute() {
         let result = parse_time("12:45");
         assert_eq!(result.ok(), NaiveTime::from_hms_opt(12, 45, 0));
     }
+
     #[test]
     fn test_parse_time_hour() {
         let result = parse_time("12");
         assert_eq!(result.ok(), NaiveTime::from_hms_opt(12, 0, 0));
     }
+
     #[test]
     fn test_parse_time_hour_with_h() {
         let result = parse_time("12H");
         assert_eq!(result.ok(), NaiveTime::from_hms_opt(12, 0, 0));
     }
+
     #[test]
     fn test_parse_time_invalid() {
         let result = parse_time("HALO");
         assert!(result.is_err());
     }
+
     #[test]
     fn test_parse_tz() {
         let result = parse_tz("UTC");
@@ -176,6 +181,7 @@ mod tests {
         let result = parse_tz("CET");
         assert_eq!(result, Ok(CET));
     }
+
     #[test]
     fn test_convert_time() {
         let result = convert_time_between_timezones(

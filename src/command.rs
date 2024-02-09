@@ -65,9 +65,10 @@ fn convert_error() -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use chrono::Duration;
     use chrono_tz::OffsetComponents;
+
+    use super::*;
 
     pub fn is_dst(tz: Tz) -> bool {
         let now = Utc::now().with_timezone(&tz);
@@ -80,59 +81,70 @@ mod tests {
         let result = command_convert("12:00 BRT CET");
         assert_eq!(result, format!("12:00 BRT - {cet_hour}:00 CET"));
     }
+
     #[test]
     fn test_convert_time_utc_brl() {
         let result = command_convert("12:00 UTC BRT");
         assert_eq!(result, "12:00 UTC - 09:00 BRT");
     }
+
     #[test]
     fn test_convert_time_one_digit() {
         let cet_hour = if is_dst(Tz::CET) { "05" } else { "06" };
         let result = command_convert("1:00 BRT CET");
         assert_eq!(result, format!("01:00 BRT - {cet_hour}:00 CET"));
     }
+
     #[test]
     fn test_convert_time_minimal() {
         let cet_hour = if is_dst(Tz::CET) { "05" } else { "06" };
         let result = command_convert("1 BRT CET");
         assert_eq!(result, format!("01:00 BRT - {cet_hour}:00 CET"));
     }
+
     #[test]
     fn test_convert_time_multiple_spaces() {
         let eet_hour = if is_dst(Tz::EET) { 17 } else { 18 };
         let result = command_convert("12:00    BRT     RO    ");
         assert_eq!(result, format!("12:00 BRT - {eet_hour}:00 EET"));
     }
+
     #[test]
     fn test_convert_time_missing_target_tz() {
         let result = command_convert("12:00 UTC");
         assert_eq!(result, convert_error());
     }
+
     #[test]
     fn test_process_command_start() {
         let result = process_command("/start");
         assert_eq!(result, command_start());
     }
+
     #[test]
     fn test_process_command_now() {
         let result = process_command("/now utc");
         assert_eq!(result, command_now("utc"));
     }
+
     #[test]
     fn test_process_command_now_multiple_spaces() {
         let result = process_command("/now   utc    ");
         assert_eq!(result, command_now("utc"));
     }
+
     #[test]
     fn test_process_command_convert() {
         let result = process_command("/convert 12:00 UTC BRT");
         assert_eq!(result, command_convert("12:00 UTC BRT"));
     }
+
     #[test]
     fn test_process_command_with_h_convert() {
         let result = process_command("/convert 12h UTC BRT");
         assert_eq!(result, command_convert("12:00 UTC BRT"));
     }
+
     #[test]
     fn test_process_command_invalid() {
         let result = process_command("invalid");
