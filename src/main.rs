@@ -4,6 +4,7 @@ use crate::api::app;
 
 mod api;
 mod command;
+mod converter;
 mod telegram;
 mod time;
 

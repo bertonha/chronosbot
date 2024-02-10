@@ -73,68 +73,7 @@ pub fn format_times(times: Vec<DateTime<Tz>>) -> String {
         .join(" - ")
 }
 
-pub fn convert_time_between_timezones(
-    src_time: NaiveTime,
-    timezones: Vec<Tz>,
-) -> impl Iterator<Item = String> {
-    timezones
-        .clone()
-        .into_iter()
-        .map(move |tz| convert_datetime_to_timezones(src_time, tz, &timezones))
-}
-
-fn convert_datetime_to_timezones(src_time: NaiveTime, src_tz: Tz, timezones: &[Tz]) -> String {
-    let src_time = time_with_timezone(src_time, src_tz);
-    let mut times = vec![src_time];
-    for dst_tz in timezones {
-        if src_tz == *dst_tz {
-            continue;
-        }
-        times.push(src_time.with_timezone(dst_tz));
-    }
-    format_times(times)
-}
-
-pub fn parse_time_for_timezones(
-    src_text: &str,
-    timezones: Vec<Tz>,
-) -> Result<Vec<String>, Box<dyn Error>> {
-    let src_time = if src_text.is_empty() {
-        naive_now()
-    } else {
-        parse_time(src_text)?
-    };
-    Ok(convert_time_between_timezones(src_time, timezones).collect())
-}
-
-pub fn parse_time_with_timezones(input: &str) -> Result<String, Box<dyn Error>> {
-    let split_values: Vec<&str> = input.split_whitespace().collect();
-
-    let (src_time, timezone_start_index) = if split_values.len() == 2 {
-        (naive_now(), 0)
-    } else {
-        let src_time = if split_values[0] == "now" {
-            naive_now()
-        } else {
-            parse_time(split_values[0])?
-        };
-        (src_time, 1)
-    };
-
-    let timezones = split_values
-        .into_iter()
-        .skip(timezone_start_index)
-        .map(parse_tz)
-        .collect::<Result<Vec<_>, _>>()?;
-
-    let result = convert_time_between_timezones(src_time, timezones)
-        .next()
-        .ok_or("No result found")?;
-
-    Ok(result)
-}
-
-fn naive_now() -> NaiveTime {
+pub fn naive_now() -> NaiveTime {
     Utc::now().time()
 }
 
@@ -180,19 +119,5 @@ mod tests {
         assert_eq!(result, Ok(Sao_Paulo));
         let result = parse_tz("CET");
         assert_eq!(result, Ok(CET));
-    }
-
-    #[test]
-    fn test_convert_time() {
-        let result = convert_time_between_timezones(
-            NaiveTime::from_hms_opt(12, 0, 0).unwrap(),
-            vec![CET, Sao_Paulo, EET],
-        );
-
-        assert!(result.eq([
-            "12:00 CET - 08:00 BRT - 13:00 EET",
-            "12:00 BRT - 16:00 CET - 17:00 EET",
-            "12:00 EET - 11:00 CET - 07:00 BRT",
-        ]));
     }
 }

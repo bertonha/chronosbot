@@ -5,6 +5,7 @@ use chrono_tz::America::Sao_Paulo;
 use chrono_tz::Tz::CET;
 use chrono_tz::{ParseError, Tz};
 
+use crate::converter::Converter;
 use crate::time;
 
 pub fn process_command(text: &str) -> String {
@@ -18,10 +19,13 @@ pub fn process_command(text: &str) -> String {
 }
 
 pub fn convert_time_between_timezones(src_text: &str) -> Result<Vec<String>, Box<dyn Error>> {
-    match time::parse_time_for_timezones(src_text, vec![CET, Sao_Paulo]) {
-        Ok(converted) => Ok(converted),
-        Err(_) => time::parse_time_with_timezones(src_text).map(|converted| vec![converted]),
-    }
+    let converter = match time::parse_time(src_text) {
+        Ok(time) => Converter::new(time, vec![CET, Sao_Paulo]),
+        Err(_) => Converter::try_from(src_text)?,
+    };
+    Ok(converter
+        .convert_time_between_timezones()
+        .collect::<Vec<String>>())
 }
 
 const CONVERT_COMMAND_INFO: &str = "<time> <source_timezone> <target_timezone>";
@@ -51,7 +55,13 @@ fn command_now(timezone: &str) -> String {
 }
 
 fn command_convert(input: &str) -> String {
-    time::parse_time_with_timezones(input).unwrap_or_else(|_| convert_error())
+    match Converter::try_from(input) {
+        Ok(converter) => converter
+            .convert_time_between_timezones()
+            .next()
+            .unwrap_or("No time to convert".to_string()),
+        Err(_) => convert_error(),
+    }
 }
 
 fn now(timezone: &str) -> Result<DateTime<Tz>, ParseError> {
@@ -112,7 +122,7 @@ mod tests {
     #[test]
     fn test_convert_time_missing_target_tz() {
         let result = command_convert("12:00 UTC");
-        assert_eq!(result, convert_error());
+        assert_eq!(result, "12:00 UTC");
     }
 
     #[test]
