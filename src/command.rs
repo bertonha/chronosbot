@@ -1,8 +1,6 @@
 use std::error::Error;
 
 use chrono::{DateTime, Utc};
-use chrono_tz::America::Sao_Paulo;
-use chrono_tz::Tz::CET;
 use chrono_tz::{ParseError, Tz};
 
 use crate::converter::Converter;
@@ -18,14 +16,15 @@ pub fn process_command(text: &str) -> String {
     }
 }
 
-pub fn convert_time_between_timezones(src_text: &str) -> Result<Vec<String>, Box<dyn Error>> {
+pub fn convert_from_input_or_default_timezones(
+    src_text: &str,
+    default_timezones: Vec<Tz>,
+) -> Result<Converter, Box<dyn Error>> {
     let converter = match time::parse_time(src_text) {
-        Ok(time) => Converter::new(time, vec![CET, Sao_Paulo]),
+        Ok(time) => Converter::new(time, default_timezones),
         Err(_) => Converter::try_from(src_text)?,
     };
-    Ok(converter
-        .convert_time_between_timezones()
-        .collect::<Vec<String>>())
+    Ok(converter)
 }
 
 const CONVERT_COMMAND_INFO: &str = "<time> <source_timezone> <target_timezone>";

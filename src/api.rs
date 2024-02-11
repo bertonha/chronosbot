@@ -2,9 +2,11 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
+use chrono_tz::America::Sao_Paulo;
+use chrono_tz::CET;
 use tower_http::trace::TraceLayer;
 
-use crate::command::{convert_time_between_timezones, process_command};
+use crate::command::{convert_from_input_or_default_timezones, process_command};
 use crate::telegram::{InlineQueryResult, RequestType, TelegramRequest, TelegramResponse};
 
 async fn welcome() -> &'static str {
@@ -41,10 +43,11 @@ async fn receive_message(Json(payload): Json<TelegramRequest>) -> Json<Option<Te
         },
 
         RequestType::InlineQuery(inline) => {
-            match convert_time_between_timezones(inline.query.trim()) {
-                Ok(times) => {
-                    let results = times
-                        .into_iter()
+            match convert_from_input_or_default_timezones(inline.query.trim(), vec![CET, Sao_Paulo])
+            {
+                Ok(converter) => {
+                    let results = converter
+                        .convert_time_between_timezones()
                         .enumerate()
                         .map(|(idx, time)| InlineQueryResult::article(idx.to_string(), time))
                         .collect::<_>();

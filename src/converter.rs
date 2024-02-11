@@ -1,5 +1,6 @@
 use chrono::NaiveTime;
 use chrono_tz::Tz;
+use itertools::Itertools;
 
 use crate::time::{format_times, naive_now, parse_time, parse_tz, time_with_timezone};
 
@@ -40,9 +41,10 @@ impl TryFrom<&str> for Converter {
             }
         };
 
-        let timezones = split_values
+        let timezones: Vec<Tz> = split_values
             .into_iter()
             .skip(timezone_start_index)
+            .unique()
             .map(parse_tz)
             .collect::<Result<Vec<_>, _>>()?;
         Ok(Self::new(base_time, timezones))
