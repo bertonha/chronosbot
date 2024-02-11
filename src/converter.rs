@@ -18,9 +18,8 @@ impl Converter {
 
     pub fn convert_time_between_timezones(&self) -> impl Iterator<Item = String> + '_ {
         self.timezones
-            .clone()
-            .into_iter()
-            .map(move |tz| convert_datetime_to_timezones(self.base_time, tz, &self.timezones))
+            .iter()
+            .map(|tz| convert_datetime_to_timezones(&self.base_time, tz, &self.timezones))
     }
 }
 
@@ -50,11 +49,11 @@ impl TryFrom<&str> for Converter {
     }
 }
 
-fn convert_datetime_to_timezones(src_time: NaiveTime, src_tz: Tz, timezones: &[Tz]) -> String {
+fn convert_datetime_to_timezones(src_time: &NaiveTime, src_tz: &Tz, timezones: &[Tz]) -> String {
     let src_time = time_with_timezone(src_time, src_tz);
     let mut times = vec![src_time];
     for dst_tz in timezones {
-        if src_tz == *dst_tz {
+        if src_tz == dst_tz {
             continue;
         }
         times.push(src_time.with_timezone(dst_tz));
