@@ -1,7 +1,7 @@
 use std::error::Error;
 
-use chrono::{DateTime, Utc};
-use chrono_tz::{ParseError, Tz};
+use chrono_tz::Tz;
+use itertools::Itertools;
 
 use crate::converter::Converter;
 use crate::time;
@@ -21,7 +21,7 @@ pub fn convert_from_input_or_default_timezones(
     default_timezones: Vec<Tz>,
 ) -> Result<Converter, Box<dyn Error>> {
     let converter = match time::parse_time(src_text) {
-        Ok(time) => Converter::new(time, default_timezones),
+        Ok(time) => Converter::new(Some(time), default_timezones),
         Err(_) => Converter::try_from(src_text)?,
     };
     Ok(converter)
@@ -47,25 +47,17 @@ fn command_start() -> String {
 }
 
 fn command_now(timezone: &str) -> String {
-    match now(timezone) {
-        Ok(time) => time::format_time_with_timezone(time),
+    match Converter::try_from_only_timezones(timezone) {
+        Ok(converter) => converter.convert_time_between_timezones().join(" - "),
         Err(error) => error.to_string(),
     }
 }
 
 fn command_convert(input: &str) -> String {
     match Converter::try_from(input) {
-        Ok(converter) => converter
-            .convert_time_between_timezones()
-            .next()
-            .unwrap_or("No time to convert".to_string()),
+        Ok(converter) => converter.convert_time_only_first(),
         Err(_) => convert_error(),
     }
-}
-
-fn now(timezone: &str) -> Result<DateTime<Tz>, ParseError> {
-    let tz = time::parse_tz(timezone.trim())?;
-    Ok(Utc::now().with_timezone(&tz))
 }
 
 fn convert_error() -> String {
@@ -74,7 +66,7 @@ fn convert_error() -> String {
 
 #[cfg(test)]
 mod tests {
-    use chrono::Duration;
+    use chrono::{Duration, Utc};
     use chrono_tz::OffsetComponents;
 
     use super::*;

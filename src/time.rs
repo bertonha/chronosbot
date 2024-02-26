@@ -55,8 +55,8 @@ pub fn parse_time(text: &str) -> Result<NaiveTime, Box<dyn Error>> {
     }
 }
 
-pub fn now_on_timezone(tz: &Tz) -> NaiveTime {
-    Utc::now().with_timezone(tz).time()
+pub fn now_on_timezone(tz: &Tz) -> DateTime<Tz> {
+    Utc::now().with_timezone(tz)
 }
 
 pub fn time_with_timezone(time: &NaiveTime, tz: &Tz) -> DateTime<Tz> {
