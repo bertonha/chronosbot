@@ -7,7 +7,6 @@ use chrono::{DateTime, NaiveTime, Timelike, Utc};
 use chrono_tz::America::Sao_Paulo;
 use chrono_tz::Europe::{Amsterdam, Bucharest, Madrid};
 use chrono_tz::{ParseError, Tz, CET, EET, EST, UTC};
-use itertools::join;
 
 pub fn parse_tz(text: &str) -> Result<Tz, ParseError> {
     match text.to_lowercase().as_str() {
@@ -68,10 +67,6 @@ pub fn time_with_timezone(time: &NaiveTime, tz: &Tz) -> DateTime<Tz> {
         .unwrap()
         .with_second(0)
         .unwrap()
-}
-
-pub fn format_times(times: Vec<DateTime<Tz>>) -> String {
-    join(times.into_iter().map(format_time_with_timezone), " - ")
 }
 
 #[cfg(test)]

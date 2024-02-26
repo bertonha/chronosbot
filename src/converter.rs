@@ -2,7 +2,9 @@ use chrono::NaiveTime;
 use chrono_tz::{ParseError, Tz};
 use itertools::Itertools;
 
-use crate::time::{format_times, now_on_timezone, parse_time, parse_tz, time_with_timezone};
+use crate::time::{
+    format_time_with_timezone, now_on_timezone, parse_time, parse_tz, time_with_timezone,
+};
 
 pub struct Converter {
     pub base_time: Option<NaiveTime>,
@@ -28,10 +30,10 @@ impl Converter {
             .map(|tz| convert_datetime_to_timezones(&self.base_time, tz, &self.timezones))
     }
 
-    pub fn convert_time_only_first(&self) -> String {
-        self.convert_time_between_timezones()
-            .next()
-            .unwrap_or_else(|| "No time to convert".to_string())
+    pub fn now_in_timezones(&self) -> impl Iterator<Item = String> + '_ {
+        self.timezones
+            .iter()
+            .map(|tz| format_time_with_timezone(now_on_timezone(tz)))
     }
 }
 
@@ -73,7 +75,7 @@ fn convert_datetime_to_timezones(
         }
         times.push(src_time.with_timezone(dst_tz));
     }
-    format_times(times)
+    times.into_iter().map(format_time_with_timezone).join(" - ")
 }
 
 fn timezone_parser<'a>(input: impl Iterator<Item = &'a str>) -> Result<Vec<Tz>, ParseError> {

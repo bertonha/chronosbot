@@ -48,14 +48,17 @@ fn command_start() -> String {
 
 fn command_now(timezone: &str) -> String {
     match Converter::try_from_only_timezones(timezone) {
-        Ok(converter) => converter.convert_time_between_timezones().join(" - "),
+        Ok(converter) => converter.now_in_timezones().join(" - "),
         Err(error) => error.to_string(),
     }
 }
 
 fn command_convert(input: &str) -> String {
     match Converter::try_from(input) {
-        Ok(converter) => converter.convert_time_only_first(),
+        Ok(converter) => converter
+            .convert_time_between_timezones()
+            .next()
+            .unwrap_or_else(|| "No time to convert".to_string()),
         Err(_) => convert_error(),
     }
 }
