@@ -2,7 +2,7 @@ use chrono::NaiveTime;
 use chrono_tz::Tz;
 use itertools::Itertools;
 
-use crate::time::{format_times, naive_now, parse_time, parse_tz, time_with_timezone};
+use crate::time::{format_times, now_on_timezone, parse_time, parse_tz, time_with_timezone};
 
 pub struct Converter {
     pub base_time: NaiveTime,
@@ -30,14 +30,14 @@ impl TryFrom<&str> for Converter {
     fn try_from(input: &str) -> Result<Self, Self::Error> {
         let split_values: Vec<&str> = input.split_whitespace().collect();
 
-        let (base_time, timezone_start_index) = if split_values.is_empty() {
-            (naive_now(), 0)
+        let (parsed_time, timezone_start_index) = if split_values.is_empty() {
+            (None, 0)
         } else if split_values[0] == "now" {
-            (naive_now(), 1)
+            (None, 1)
         } else {
             match parse_time(split_values[0]) {
-                Ok(time) => (time, 1),
-                Err(_) => (naive_now(), 0),
+                Ok(time) => (Some(time), 1),
+                Err(_) => (None, 0),
             }
         };
 
@@ -47,6 +47,12 @@ impl TryFrom<&str> for Converter {
             .unique()
             .map(parse_tz)
             .collect::<Result<Vec<_>, _>>()?;
+
+        if timezones.is_empty() {
+            return Err("No timezones provided".into());
+        }
+
+        let base_time = parsed_time.unwrap_or_else(|| now_on_timezone(&timezones[0]));
         Ok(Self::new(base_time, timezones))
     }
 }
