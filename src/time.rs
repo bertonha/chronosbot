@@ -18,7 +18,7 @@ pub fn parse_tz(text: &str) -> Result<Tz, ParseError> {
         "brazil" | "brasil" | "brt" | "br" => Ok(Sao_Paulo),
         "netherlands" | "amsterdam" | "nl" => Ok(Amsterdam),
         "romania" | "romenia" | "ro" => Ok(Bucharest),
-        _ => text.parse(),
+        _ => Tz::from_str_insensitive(text),
     }
 }
 
