@@ -69,14 +69,14 @@ fn convert_error() -> String {
 
 #[cfg(test)]
 mod tests {
-    use chrono::{Duration, Utc};
+    use chrono::{TimeDelta, Utc};
     use chrono_tz::OffsetComponents;
 
     use super::*;
 
     pub fn is_dst(tz: Tz) -> bool {
         let now = Utc::now().with_timezone(&tz);
-        now.offset().dst_offset() == Duration::seconds(0)
+        now.offset().dst_offset() == TimeDelta::try_seconds(0).unwrap()
     }
 
     #[test]
