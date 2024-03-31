@@ -7,6 +7,7 @@ mod command;
 mod converter;
 mod telegram;
 mod time;
+mod utils;
 
 #[tokio::main]
 async fn main() {
