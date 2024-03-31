@@ -94,9 +94,9 @@ mod tests {
 
     #[test]
     fn test_convert_time_minimal() {
-        let cet_hour = if is_dst(Tz::CET) { "06:00" } else { "05:00" };
-        let result = command_convert("1 BRT CET");
-        assert_eq!(result, format!("01:00 BRT - {cet_hour} CET"));
+        let cet_hour = if is_dst(Tz::CET) { "07:00" } else { "06:00" };
+        let result = command_convert("2 BRT CET");
+        assert_eq!(result, format!("02:00 BRT - {cet_hour} CET"));
     }
 
     #[test]
