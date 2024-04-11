@@ -209,7 +209,6 @@ dependencies = [
  "axum",
  "chrono",
  "chrono-tz",
- "http",
  "http-body-util",
  "hyper",
  "itertools",
