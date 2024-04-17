@@ -98,11 +98,8 @@ mod tests {
 
     #[test]
     fn test_parse_tz() {
-        let result = parse_tz("UTC");
-        assert_eq!(result, Ok(UTC));
-        let result = parse_tz("BRT");
-        assert_eq!(result, Ok(SAO_PAULO));
-        let result = parse_tz("CET");
-        assert_eq!(result, Ok(CET));
+        assert_eq!(parse_tz("UTC"), Ok(UTC));
+        assert_eq!(parse_tz("BRT"), Ok(SAO_PAULO));
+        assert_eq!(parse_tz("CET"), Ok(CET));
     }
 }
