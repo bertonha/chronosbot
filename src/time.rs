@@ -2,14 +2,18 @@ use std::error::Error;
 use std::str::FromStr;
 
 use chrono::{DateTime, NaiveTime, Timelike, Utc};
-use chrono_tz::America::Sao_Paulo as SAO_PAULO;
+use chrono_tz::America::Los_Angeles as PDT;
+use chrono_tz::America::New_York as EDT;
+use chrono_tz::America::Sao_Paulo as BRT;
 use chrono_tz::{ParseError, Tz, CET, EET};
 
 pub fn parse_tz(text: &str) -> Result<Tz, ParseError> {
     match text.to_lowercase().as_str() {
+        "pdt" => Ok(PDT),
+        "edt" => Ok(EDT),
         "europe" => Ok(CET),
         "madrid" | "barcelona" | "spain" | "es" => Ok(CET),
-        "brazil" | "brasil" | "brt" | "br" => Ok(SAO_PAULO),
+        "brazil" | "brasil" | "brt" | "br" => Ok(BRT),
         "netherlands" | "amsterdam" | "nl" => Ok(CET),
         "romania" | "romenia" | "ro" => Ok(EET),
         _ => Tz::from_str_insensitive(text),
@@ -26,7 +30,9 @@ pub fn format_time_with_timezone(time: DateTime<Tz>) -> String {
 
 pub fn format_timezone(tz: Tz) -> String {
     match tz {
-        SAO_PAULO => "BRT".to_string(),
+        BRT => "BRT".to_string(),
+        PDT => "PDT".to_string(),
+        EDT => "EDT".to_string(),
         _ => tz.to_string(),
     }
 }
@@ -99,7 +105,7 @@ mod tests {
     #[test]
     fn test_parse_tz() {
         assert_eq!(parse_tz("UTC"), Ok(UTC));
-        assert_eq!(parse_tz("BRT"), Ok(SAO_PAULO));
+        assert_eq!(parse_tz("BRT"), Ok(BRT));
         assert_eq!(parse_tz("CET"), Ok(CET));
     }
 }
