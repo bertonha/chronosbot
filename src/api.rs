@@ -6,7 +6,7 @@ use chrono_tz::America::Sao_Paulo;
 use chrono_tz::CET;
 use tower_http::trace::TraceLayer;
 
-use crate::command::{convert_from_input_or_default_timezones, process_command};
+use crate::command::{convert_from_input_or_default_timezones, process_input};
 use crate::telegram::{InlineQueryResult, RequestType, TelegramRequest, TelegramResponse};
 
 async fn welcome() -> &'static str {
@@ -27,7 +27,7 @@ async fn receive_message(Json(payload): Json<TelegramRequest>) -> Json<Option<Te
             match message.text {
                 Some(text) => Some(TelegramResponse::send_message(
                     message.chat.id,
-                    process_command(&text),
+                    process_input(&text),
                 )),
                 None => None,
             }
@@ -37,7 +37,7 @@ async fn receive_message(Json(payload): Json<TelegramRequest>) -> Json<Option<Te
             Some(text) => Some(TelegramResponse::edit_message(
                 message.chat.id,
                 message.message_id + 1,
-                process_command(&text),
+                process_input(&text),
             )),
             None => None,
         },

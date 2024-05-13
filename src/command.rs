@@ -1,18 +1,25 @@
 use std::error::Error;
 
-use chrono_tz::Tz;
+use chrono_tz::{ParseError, Tz};
 use itertools::Itertools;
 
 use crate::converter::Converter;
 use crate::time;
 
-pub fn process_command(text: &str) -> String {
+pub fn process_input(text: &str) -> String {
     let (command, rest) = text.split_once(' ').unwrap_or((text, ""));
     match command {
         "/start" => command_start(),
-        "/now" => command_now(rest),
-        "/convert" => command_convert(rest),
-        _ => invalid_command(),
+        "/now" => command_now(rest).unwrap_or_else(|e| e.to_string()),
+        "/convert" => command_convert(rest).unwrap_or(convert_error()),
+        _ => normal_message(text),
+    }
+}
+
+fn normal_message(src_text: &str) -> String {
+    match command_convert(src_text) {
+        Ok(result) => result,
+        Err(_) => command_now(src_text).unwrap_or(invalid_command()),
     }
 }
 
@@ -46,21 +53,17 @@ fn command_start() -> String {
     format!("Welcome!\n\n{}", command_list())
 }
 
-fn command_now(timezone: &str) -> String {
-    match Converter::try_from_only_timezones(timezone) {
-        Ok(converter) => converter.now_in_timezones().join(" - "),
-        Err(error) => error.to_string(),
-    }
+fn command_now(timezone: &str) -> Result<String, ParseError> {
+    Ok(Converter::try_from_only_timezones(timezone)?
+        .now_in_timezones()
+        .join(" - "))
 }
 
-fn command_convert(input: &str) -> String {
-    match Converter::try_from(input) {
-        Ok(converter) => converter
-            .convert_time_between_timezones()
-            .next()
-            .unwrap_or_else(|| "No time to convert".to_string()),
-        Err(_) => convert_error(),
-    }
+fn command_convert(input: &str) -> Result<String, Box<dyn Error>> {
+    Ok(Converter::try_from(input)?
+        .convert_time_between_timezones()
+        .next()
+        .unwrap_or_else(|| "No time to convert".to_string()))
 }
 
 fn convert_error() -> String {
@@ -76,75 +79,75 @@ mod tests {
     fn test_convert_time_brt_cet() {
         let cet_hour = if is_dst(Tz::CET) { "17:00" } else { "16:00" };
         let result = command_convert("12:00 BRT CET");
-        assert_eq!(result, format!("12:00 BRT - {cet_hour} CET"));
+        assert_eq!(result.unwrap(), format!("12:00 BRT - {cet_hour} CET"));
     }
 
     #[test]
     fn test_convert_time_utc_brl() {
         let result = command_convert("12:00 UTC BRT");
-        assert_eq!(result, "12:00 UTC - 09:00 BRT");
+        assert_eq!(result.unwrap(), "12:00 UTC - 09:00 BRT");
     }
 
     #[test]
     fn test_convert_time_one_digit() {
         let cet_hour = if is_dst(Tz::CET) { "06:00" } else { "05:00" };
         let result = command_convert("1:00 BRT CET");
-        assert_eq!(result, format!("01:00 BRT - {cet_hour} CET"));
+        assert_eq!(result.unwrap(), format!("01:00 BRT - {cet_hour} CET"));
     }
 
     #[test]
     fn test_convert_time_minimal() {
         let cet_hour = if is_dst(Tz::CET) { "07:00" } else { "06:00" };
         let result = command_convert("2 BRT CET");
-        assert_eq!(result, format!("02:00 BRT - {cet_hour} CET"));
+        assert_eq!(result.unwrap(), format!("02:00 BRT - {cet_hour} CET"));
     }
 
     #[test]
     fn test_convert_time_multiple_spaces() {
         let eet_hour = if is_dst(Tz::EET) { "18:00" } else { "17:00" };
         let result = command_convert("12:00    BRT     RO    ");
-        assert_eq!(result, format!("12:00 BRT - {eet_hour} EET"));
+        assert_eq!(result.unwrap(), format!("12:00 BRT - {eet_hour} EET"));
     }
 
     #[test]
     fn test_convert_time_missing_target_tz() {
         let result = command_convert("12:00 UTC");
-        assert_eq!(result, "12:00 UTC");
+        assert_eq!(result.unwrap(), "12:00 UTC");
     }
 
     #[test]
     fn test_process_command_start() {
-        let result = process_command("/start");
+        let result = process_input("/start");
         assert_eq!(result, command_start());
     }
 
     #[test]
     fn test_process_command_now() {
-        let result = process_command("/now utc");
-        assert_eq!(result, command_now("utc"));
+        let result = process_input("/now utc");
+        assert_eq!(result, command_now("utc").unwrap());
     }
 
     #[test]
     fn test_process_command_now_multiple_spaces() {
-        let result = process_command("/now   utc    ");
-        assert_eq!(result, command_now("utc"));
+        let result = process_input("/now   utc    ");
+        assert_eq!(result, command_now("utc").unwrap());
     }
 
     #[test]
     fn test_process_command_convert() {
-        let result = process_command("/convert 12:00 UTC BRT");
-        assert_eq!(result, command_convert("12:00 UTC BRT"));
+        let result = process_input("/convert 12:00 UTC BRT");
+        assert_eq!(result, command_convert("12:00 UTC BRT").unwrap());
     }
 
     #[test]
     fn test_process_command_with_h_convert() {
-        let result = process_command("/convert 12h UTC BRT");
-        assert_eq!(result, command_convert("12:00 UTC BRT"));
+        let result = process_input("/convert 12h UTC BRT");
+        assert_eq!(result, command_convert("12:00 UTC BRT").unwrap());
     }
 
     #[test]
     fn test_process_command_invalid() {
-        let result = process_command("invalid");
+        let result = process_input("invalid");
         assert_eq!(result, invalid_command());
     }
 }
