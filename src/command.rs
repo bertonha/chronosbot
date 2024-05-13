@@ -17,10 +17,7 @@ pub fn process_input(text: &str) -> String {
 }
 
 fn normal_message(src_text: &str) -> String {
-    match command_convert(src_text) {
-        Ok(result) => result,
-        Err(_) => command_now(src_text).unwrap_or(invalid_command()),
-    }
+    command_convert(src_text).unwrap_or(command_now(src_text).unwrap_or(invalid_command()))
 }
 
 pub fn convert_from_input_or_default_timezones(
