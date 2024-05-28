@@ -1,21 +1,20 @@
 use std::error::Error;
 use std::str::FromStr;
 
+use crate::utils::is_dst;
 use chrono::{DateTime, NaiveTime, Timelike, Utc};
-use chrono_tz::America::Los_Angeles as PDT;
-use chrono_tz::America::New_York as EDT;
-use chrono_tz::America::Sao_Paulo as BRT;
-use chrono_tz::{ParseError, Tz, CET, EET};
+use chrono_tz::{ParseError, Tz};
 
 pub fn parse_tz(text: &str) -> Result<Tz, ParseError> {
     match text.to_lowercase().as_str() {
-        "pdt" => Ok(PDT),
-        "edt" => Ok(EDT),
-        "europe" => Ok(CET),
-        "madrid" | "barcelona" | "spain" | "es" => Ok(CET),
-        "brazil" | "brasil" | "brt" | "br" => Ok(BRT),
-        "netherlands" | "amsterdam" | "nl" => Ok(CET),
-        "romania" | "romenia" | "ro" => Ok(EET),
+        "pdt" | "pst" => Ok(Tz::PST8PDT),
+        "edt" | "est" => Ok(Tz::EST5EDT),
+        "mdt" | "mst" => Ok(Tz::MST7MDT),
+        "europe" => Ok(Tz::CET),
+        "madrid" | "barcelona" | "spain" | "es" => Ok(Tz::CET),
+        "brazil" | "brasil" | "brt" | "br" => Ok(Tz::America__Sao_Paulo),
+        "netherlands" | "amsterdam" | "nl" => Ok(Tz::CET),
+        "romania" | "romenia" | "ro" => Ok(Tz::Europe__Bucharest),
         _ => Tz::from_str_insensitive(text),
     }
 }
@@ -30,10 +29,19 @@ pub fn format_time_with_timezone(time: DateTime<Tz>) -> String {
 
 pub fn format_timezone(tz: Tz) -> String {
     match tz {
-        BRT => "BRT".to_string(),
-        PDT => "PDT".to_string(),
-        EDT => "EDT".to_string(),
+        Tz::America__Sao_Paulo => "BRT".to_string(),
+        Tz::PST8PDT => demultiplexer_timezone(tz, "PST", "PDT"),
+        Tz::EST5EDT => demultiplexer_timezone(tz, "EST", "EDT"),
+        Tz::MST7MDT => demultiplexer_timezone(tz, "MST", "MDT"),
         _ => tz.to_string(),
+    }
+}
+
+fn demultiplexer_timezone(tz: Tz, summer_time: &str, standard_time: &str) -> String {
+    if is_dst(tz) {
+        summer_time.to_string()
+    } else {
+        standard_time.to_string()
     }
 }
 
@@ -70,7 +78,6 @@ pub fn time_with_timezone(time: &NaiveTime, tz: &Tz) -> DateTime<Tz> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chrono_tz::UTC;
 
     #[test]
     fn test_parse_time_complete() {
@@ -104,8 +111,18 @@ mod tests {
 
     #[test]
     fn test_parse_tz() {
-        assert_eq!(parse_tz("UTC"), Ok(UTC));
-        assert_eq!(parse_tz("BRT"), Ok(BRT));
-        assert_eq!(parse_tz("CET"), Ok(CET));
+        assert_eq!(parse_tz("UTC"), Ok(Tz::UTC));
+        assert_eq!(parse_tz("BRT"), Ok(Tz::America__Sao_Paulo));
+        assert_eq!(parse_tz("CET"), Ok(Tz::CET));
+        assert_eq!(parse_tz("PST"), Ok(Tz::PST8PDT));
+    }
+
+    #[test]
+    fn test_format_timezone() {
+        assert_eq!(format_timezone(Tz::UTC), "UTC");
+        assert_eq!(format_timezone(Tz::America__Sao_Paulo), "BRT");
+        assert_eq!(format_timezone(Tz::CET), "CET");
+        let pacific_time = if is_dst(Tz::PST8PDT) { "PST" } else { "PDT" };
+        assert_eq!(format_timezone(Tz::PST8PDT), pacific_time);
     }
 }

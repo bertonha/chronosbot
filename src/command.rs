@@ -101,9 +101,16 @@ mod tests {
 
     #[test]
     fn test_convert_time_multiple_spaces() {
-        let eet_hour = if is_dst(Tz::EET) { "18:00" } else { "17:00" };
+        let bucharest_hour = if is_dst(Tz::Europe__Bucharest) {
+            "18:00"
+        } else {
+            "17:00"
+        };
         let result = command_convert("12:00    BRT     RO    ");
-        assert_eq!(result.unwrap(), format!("12:00 BRT - {eet_hour} EET"));
+        assert_eq!(
+            result.unwrap(),
+            format!("12:00 BRT - {bucharest_hour} Europe/Bucharest")
+        );
     }
 
     #[test]
