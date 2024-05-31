@@ -7,13 +7,14 @@ use chrono_tz::{ParseError, Tz};
 
 pub fn parse_tz(text: &str) -> Result<Tz, ParseError> {
     match text.to_lowercase().as_str() {
-        "pdt" | "pst" => Ok(Tz::PST8PDT),
         "edt" | "est" => Ok(Tz::EST5EDT),
+        "cdt" | "cst" => Ok(Tz::CST6CDT),
         "mdt" | "mst" => Ok(Tz::MST7MDT),
-        "europe" => Ok(Tz::CET),
-        "madrid" | "barcelona" | "spain" | "es" => Ok(Tz::CET),
+        "pdt" | "pst" => Ok(Tz::PST8PDT),
+        "europe" | "eu" => Ok(Tz::CET),
+        "madrid" | "barcelona" | "spain" | "es" => Ok(Tz::Europe__Madrid),
         "brazil" | "brasil" | "brt" | "br" => Ok(Tz::America__Sao_Paulo),
-        "netherlands" | "amsterdam" | "nl" => Ok(Tz::CET),
+        "netherlands" | "amsterdam" | "nl" => Ok(Tz::Europe__Amsterdam),
         "romania" | "romenia" | "ro" => Ok(Tz::Europe__Bucharest),
         _ => Tz::from_str_insensitive(text),
     }
@@ -30,9 +31,10 @@ pub fn format_time_with_timezone(time: DateTime<Tz>) -> String {
 pub fn format_timezone(tz: Tz) -> String {
     match tz {
         Tz::America__Sao_Paulo => "BRT".to_string(),
-        Tz::PST8PDT => demultiplexer_timezone(tz, "PST", "PDT"),
         Tz::EST5EDT => demultiplexer_timezone(tz, "EST", "EDT"),
+        Tz::CST6CDT => demultiplexer_timezone(tz, "CST", "CDT"),
         Tz::MST7MDT => demultiplexer_timezone(tz, "MST", "MDT"),
+        Tz::PST8PDT => demultiplexer_timezone(tz, "PST", "PDT"),
         _ => tz.to_string(),
     }
 }
