@@ -22,7 +22,7 @@ impl RequestType {
     }
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct TelegramRequest {
     pub update_id: u64,
     pub message: Option<Message>,
@@ -30,7 +30,7 @@ pub struct TelegramRequest {
     pub inline_query: Option<InlineQuery>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct Message {
     pub message_id: i64,
     pub from: User,
@@ -42,7 +42,7 @@ pub struct Message {
     pub via_bot: Option<User>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct User {
     pub id: i64,
     pub is_bot: bool,
@@ -52,7 +52,7 @@ pub struct User {
     pub language_code: Option<String>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct Chat {
     pub id: i64,
     pub first_name: Option<String>,
@@ -64,7 +64,7 @@ pub struct Chat {
     pub all_members_are_administrators: Option<bool>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct Entity {
     pub offset: u32,
     pub length: u32,
@@ -72,7 +72,7 @@ pub struct Entity {
     pub type_: String,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct InlineQuery {
     pub id: String,
     pub from: User,
