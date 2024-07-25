@@ -48,7 +48,12 @@ fn demultiplexer_timezone(tz: Tz, summer_time: &str, standard_time: &str) -> Str
 }
 
 fn clean_time(time: &str) -> String {
-    time.replace(['H', 'h'], "")
+    let cleaned_time = time.replace(['H', 'h'], ":");
+    if cleaned_time.ends_with(':') {
+        cleaned_time + "00"
+    } else {
+        cleaned_time
+    }
 }
 
 pub fn parse_time(text: &str) -> Result<NaiveTime, Box<dyn Error>> {
@@ -103,6 +108,12 @@ mod tests {
     fn test_parse_time_hour_with_h() {
         let result = parse_time("12H");
         assert_eq!(result.ok(), NaiveTime::from_hms_opt(12, 0, 0));
+    }
+
+    #[test]
+    fn test_parse_time_hour_with_h_and_minutes() {
+        let result = parse_time("12h30");
+        assert_eq!(result.ok(), NaiveTime::from_hms_opt(12, 30, 0));
     }
 
     #[test]
