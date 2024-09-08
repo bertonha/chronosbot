@@ -1,21 +1,18 @@
-use axum::{
-    routing::{get, post},
-    Json, Router,
-};
+use actix_web::web::Json;
+use actix_web::{get, post, Responder};
 use chrono_tz::America::Sao_Paulo;
 use chrono_tz::CET;
-use tower_http::trace::TraceLayer;
 
 use crate::command::{convert_from_input_or_default_timezones, process_input};
 use crate::telegram::{InlineQueryResult, RequestType, TelegramRequest, TelegramResponse};
 
-async fn welcome() -> &'static str {
+#[get("/")]
+async fn welcome() -> impl Responder {
     "<h1>Welcome!</h1>"
 }
 
-async fn receive_message(Json(payload): Json<TelegramRequest>) -> Json<Option<TelegramResponse>> {
-    tracing::debug!("{:?}", payload);
-
+#[post("/")]
+async fn receive_message(Json(payload): Json<TelegramRequest>) -> impl Responder {
     let response = match RequestType::from_request(payload) {
         RequestType::Message(message) => {
             if let Some(via_bot) = message.via_bot {
@@ -63,80 +60,55 @@ async fn receive_message(Json(payload): Json<TelegramRequest>) -> Json<Option<Te
     Json(response)
 }
 
-pub fn app() -> Router {
-    Router::new()
-        .route("/", get(welcome))
-        .route("/", post(receive_message))
-        .layer(TraceLayer::new_for_http())
-}
-
 #[cfg(test)]
 mod tests {
-    use axum::{
-        body::Body,
-        http::{self, Request, StatusCode},
-    };
-    use http_body_util::BodyExt;
-    use serde_json::json;
-    use tower::ServiceExt;
-
     use super::*;
 
-    #[tokio::test]
-    async fn test_welcome() {
-        let app = app();
-        let response = app
-            .oneshot(Request::builder().uri("/").body(Body::empty()).unwrap())
-            .await
-            .unwrap();
+    use actix_web::{
+        http::{header::ContentType, Method},
+        test, App,
+    };
+    use serde_json::json;
 
-        assert_eq!(response.status(), StatusCode::OK);
-        let body = response.into_body().collect().await.unwrap().to_bytes();
-        assert_eq!(&body[..], b"<h1>Welcome!</h1>");
+    #[actix_web::test]
+    async fn test_welcome() {
+        let app = test::init_service(App::new().service(welcome)).await;
+        let req = test::TestRequest::get().uri("/").to_request();
+        let resp = test::call_service(&app, req).await;
+        assert!(resp.status().is_success());
+        assert_eq!(test::read_body(resp).await, "<h1>Welcome!</h1>");
     }
 
-    #[tokio::test]
+    #[actix_web::test]
     async fn test_receive_message() {
-        let app = app();
+        let app = test::init_service(App::new().service(receive_message)).await;
+        let req = test::TestRequest::default()
+            .method(Method::POST)
+            .insert_header(ContentType::json())
+            .set_json(json!(
+                {
+                    "update_id": 123,
+                    "message": {
+                        "message_id": 123,
+                        "text": "/start",
+                        "date": 123,
+                        "from": {
+                            "id": 123,
+                            "is_bot": false,
+                            "first_name": "John",
+                        },
+                        "chat": {
+                            "id": 123,
+                            "type": "private",
+                        },
+                    }
+                }
+            ))
+            .to_request();
+        let resp = test::call_service(&app, req).await;
+        assert!(resp.status().is_success());
 
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .method(http::Method::POST)
-                    .uri("/")
-                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
-                    .body(Body::from(
-                        json!(
-                            {
-                                "update_id": 123,
-                                "message": {
-                                    "message_id": 123,
-                                    "text": "/start",
-                                    "date": 123,
-                                    "from": {
-                                        "id": 123,
-                                        "is_bot": false,
-                                        "first_name": "John",
-                                    },
-                                    "chat": {
-                                        "id": 123,
-                                        "type": "private",
-                                    },
-                                }
-                            }
-                        )
-                        .to_string(),
-                    ))
-                    .unwrap(),
-            )
-            .await
-            .unwrap();
-
-        assert_eq!(response.status(), StatusCode::OK);
-
-        let body = response.into_body().collect().await.unwrap().to_bytes();
-        let data: TelegramResponse = serde_json::from_slice(&body).unwrap();
-
+        let data: TelegramResponse = test::read_body_json(resp).await;
         assert_eq!(data.chat_id, Some(123));
         assert_eq!(data.method, "sendMessage".to_string());
         assert_eq!(data.text, Some("Welcome!\n\nCommands accepted:\n/start\n/now <timezone>\n/convert <time> <source_timezone> <target_timezone>".into()));
@@ -144,40 +116,30 @@ mod tests {
 
     #[tokio::test]
     async fn test_receive_inline_message() {
-        let app = app();
+        let app = test::init_service(App::new().service(receive_message)).await;
+        let req = test::TestRequest::default()
+            .method(Method::POST)
+            .insert_header(ContentType::json())
+            .set_json(json!(
+                {
+                    "update_id": 123,
+                    "inline_query": {
+                        "id": "123",
+                        "from": {
+                            "id": 123,
+                            "is_bot": false,
+                            "first_name": "John",
+                        },
+                        "query": "12",
+                        "offset": "",
+                    }
+                }
+            ))
+            .to_request();
+        let resp = test::call_service(&app, req).await;
+        assert!(resp.status().is_success());
 
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .method(http::Method::POST)
-                    .uri("/")
-                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
-                    .body(Body::from(
-                        json!(
-                            {
-                                "update_id": 123,
-                                "inline_query": {
-                                    "id": "123",
-                                    "from": {
-                                        "id": 123,
-                                        "is_bot": false,
-                                        "first_name": "John",
-                                    },
-                                    "query": "12",
-                                    "offset": "",
-                                }
-                            }
-                        )
-                        .to_string(),
-                    ))
-                    .unwrap(),
-            )
-            .await
-            .unwrap();
-
-        assert_eq!(response.status(), StatusCode::OK);
-        let body = response.into_body().collect().await.unwrap().to_bytes();
-        let data: TelegramResponse = serde_json::from_slice(&body).unwrap();
+        let data: TelegramResponse = test::read_body_json(resp).await;
         assert_eq!(data.method, "answerInlineQuery".to_string());
         assert_eq!(data.results.unwrap().len(), 2);
     }
