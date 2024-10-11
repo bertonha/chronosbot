@@ -11,6 +11,7 @@ pub fn parse_tz(text: &str) -> Result<Tz, ParseError> {
         "cdt" | "cst" => Ok(Tz::CST6CDT),
         "mdt" | "mst" => Ok(Tz::MST7MDT),
         "pdt" | "pst" => Ok(Tz::PST8PDT),
+        "ist" => Ok(Tz::Europe__Dublin),
         "europe" | "eu" => Ok(Tz::CET),
         "madrid" | "barcelona" | "spain" | "es" => Ok(Tz::Europe__Madrid),
         "brazil" | "brasil" | "brt" | "br" => Ok(Tz::America__Sao_Paulo),
@@ -35,6 +36,7 @@ pub fn format_timezone(tz: Tz) -> String {
         Tz::CST6CDT => demultiplexer_timezone(tz, "CST", "CDT"),
         Tz::MST7MDT => demultiplexer_timezone(tz, "MST", "MDT"),
         Tz::PST8PDT => demultiplexer_timezone(tz, "PST", "PDT"),
+        Tz::Europe__Dublin => "IST".to_string(),
         _ => tz.to_string(),
     }
 }
