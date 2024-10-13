@@ -11,7 +11,7 @@ pub fn parse_tz(text: &str) -> Result<Tz, ParseError> {
         "cdt" | "cst" => Ok(Tz::CST6CDT),
         "mdt" | "mst" => Ok(Tz::MST7MDT),
         "pdt" | "pst" => Ok(Tz::PST8PDT),
-        "ist" => Ok(Tz::Europe__Dublin),
+        "ist" | "irlanda" | "ireland" => Ok(Tz::Europe__Dublin),
         "europe" | "eu" => Ok(Tz::CET),
         "madrid" | "barcelona" | "spain" | "es" => Ok(Tz::Europe__Madrid),
         "brazil" | "brasil" | "brt" | "br" => Ok(Tz::America__Sao_Paulo),
