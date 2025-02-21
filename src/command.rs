@@ -51,16 +51,18 @@ fn command_start() -> String {
 }
 
 fn command_now(timezone: &str) -> Result<String, ParseError> {
-    Ok(Converter::try_from_only_timezones(timezone)?
+    let ret = Converter::try_from_only_timezones(timezone)?
         .now_in_timezones()
-        .join(" - "))
+        .join(" - ");
+    Ok(ret)
 }
 
 fn command_convert(input: &str) -> Result<String, Box<dyn Error>> {
-    Ok(Converter::try_from(input)?
+    let ret = Converter::try_from(input)?
         .convert_time_between_timezones()
         .next()
-        .unwrap_or_else(|| "No time to convert".to_string()))
+        .unwrap_or_else(|| "No time to convert".to_string());
+    Ok(ret)
 }
 
 fn convert_error() -> String {

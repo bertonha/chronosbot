@@ -1,5 +1,5 @@
 use actix_web::web::Json;
-use actix_web::{get, post, Responder};
+use actix_web::{Responder, get, post};
 use chrono_tz::America::Sao_Paulo;
 use chrono_tz::CET;
 
@@ -65,8 +65,9 @@ mod tests {
     use super::*;
 
     use actix_web::{
-        http::{header::ContentType, Method},
-        test, App,
+        App,
+        http::{Method, header::ContentType},
+        test,
     };
     use serde_json::json;
 
