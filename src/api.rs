@@ -15,10 +15,10 @@ async fn welcome() -> impl Responder {
 async fn receive_message(Json(payload): Json<TelegramRequest>) -> impl Responder {
     let response = match RequestType::from_request(payload) {
         RequestType::Message(message) => {
-            if let Some(via_bot) = message.via_bot {
-                if via_bot.is_bot {
-                    return Json(None);
-                }
+            if let Some(via_bot) = message.via_bot
+                && via_bot.is_bot
+            {
+                return Json(None);
             }
 
             match message.text {
