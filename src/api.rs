@@ -15,9 +15,7 @@ async fn welcome() -> impl Responder {
 async fn receive_message(Json(payload): Json<TelegramRequest>) -> impl Responder {
     let response = match RequestType::from_request(payload) {
         RequestType::Message(message) => {
-            if let Some(via_bot) = message.via_bot
-                && via_bot.is_bot
-            {
+            if message.is_from_bot() {
                 return Json(None);
             }
 
@@ -40,8 +38,7 @@ async fn receive_message(Json(payload): Json<TelegramRequest>) -> impl Responder
         },
 
         RequestType::InlineQuery(inline) => {
-            match convert_from_input_or_default_timezones(inline.query.trim(), vec![CET, Sao_Paulo])
-            {
+            match convert_from_input_or_default_timezones(inline.query.trim(), &[CET, Sao_Paulo]) {
                 Ok(converter) => {
                     let results = converter
                         .convert_time_between_timezones()

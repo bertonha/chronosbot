@@ -22,10 +22,10 @@ fn normal_message(src_text: &str) -> String {
 
 pub fn convert_from_input_or_default_timezones(
     src_text: &str,
-    default_timezones: Vec<Tz>,
+    default_timezones: &[Tz],
 ) -> Result<Converter, Box<dyn Error>> {
     let converter = match time::parse_time(src_text) {
-        Ok(time) => Converter::new(Some(time), default_timezones),
+        Ok(time) => Converter::new(Some(time), default_timezones.to_vec()),
         Err(_) => Converter::try_from(src_text)?,
     };
     Ok(converter)
@@ -72,11 +72,11 @@ fn convert_error() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::utils::is_dst;
+    use crate::utils::expected_hour;
 
     #[test]
     fn test_convert_time_brt_cet() {
-        let cet_hour = if is_dst(Tz::CET) { "17:00" } else { "16:00" };
+        let cet_hour = expected_hour(Tz::CET, "17:00", "16:00");
         let result = command_convert("12:00 BRT CET");
         assert_eq!(result.unwrap(), format!("12:00 BRT - {cet_hour} CET"));
     }
@@ -89,25 +89,21 @@ mod tests {
 
     #[test]
     fn test_convert_time_one_digit() {
-        let cet_hour = if is_dst(Tz::CET) { "06:00" } else { "05:00" };
+        let cet_hour = expected_hour(Tz::CET, "06:00", "05:00");
         let result = command_convert("1:00 BRT CET");
         assert_eq!(result.unwrap(), format!("01:00 BRT - {cet_hour} CET"));
     }
 
     #[test]
     fn test_convert_time_minimal() {
-        let cet_hour = if is_dst(Tz::CET) { "07:00" } else { "06:00" };
+        let cet_hour = expected_hour(Tz::CET, "07:00", "06:00");
         let result = command_convert("2 BRT CET");
         assert_eq!(result.unwrap(), format!("02:00 BRT - {cet_hour} CET"));
     }
 
     #[test]
     fn test_convert_time_multiple_spaces() {
-        let bucharest_hour = if is_dst(Tz::Europe__Bucharest) {
-            "18:00"
-        } else {
-            "17:00"
-        };
+        let bucharest_hour = expected_hour(Tz::Europe__Bucharest, "18:00", "17:00");
         let result = command_convert("12:00    BRT     RO    ");
         assert_eq!(
             result.unwrap(),

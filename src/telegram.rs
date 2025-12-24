@@ -42,6 +42,12 @@ pub struct Message {
     pub via_bot: Option<User>,
 }
 
+impl Message {
+    pub fn is_from_bot(&self) -> bool {
+        self.from.is_bot || self.via_bot.as_ref().map(|b| b.is_bot).unwrap_or(false)
+    }
+}
+
 #[derive(Deserialize, Serialize, Debug)]
 pub struct User {
     pub id: i64,

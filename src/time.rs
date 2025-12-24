@@ -32,16 +32,16 @@ pub fn format_time_with_timezone(time: DateTime<Tz>) -> String {
 pub fn format_timezone(tz: Tz) -> String {
     match tz {
         Tz::America__Sao_Paulo => "BRT".to_string(),
-        Tz::EST5EDT => demultiplexer_timezone(tz, "EST", "EDT"),
-        Tz::CST6CDT => demultiplexer_timezone(tz, "CST", "CDT"),
-        Tz::MST7MDT => demultiplexer_timezone(tz, "MST", "MDT"),
-        Tz::PST8PDT => demultiplexer_timezone(tz, "PST", "PDT"),
+        Tz::EST5EDT => format_dst_aware_abbreviation(tz, "EST", "EDT"),
+        Tz::CST6CDT => format_dst_aware_abbreviation(tz, "CST", "CDT"),
+        Tz::MST7MDT => format_dst_aware_abbreviation(tz, "MST", "MDT"),
+        Tz::PST8PDT => format_dst_aware_abbreviation(tz, "PST", "PDT"),
         Tz::Europe__Dublin => "IST".to_string(),
         _ => tz.to_string(),
     }
 }
 
-fn demultiplexer_timezone(tz: Tz, summer_time: &str, standard_time: &str) -> String {
+fn format_dst_aware_abbreviation(tz: Tz, summer_time: &str, standard_time: &str) -> String {
     if is_dst(tz) {
         summer_time.to_string()
     } else {
