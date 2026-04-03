@@ -6,7 +6,7 @@
 
 # Want to help us make this template better? Share your feedback here: https://forms.gle/ybq9Krt8jtBL3iCk7
 
-ARG RUST_VERSION=1.94.0
+ARG RUST_VERSION=1.94.1
 ARG ALPINE_VERSION=3.23
 ARG APP_NAME=chronosbot
 
