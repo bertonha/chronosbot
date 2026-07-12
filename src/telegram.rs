@@ -87,22 +87,25 @@ pub struct InlineQuery {
     pub chat_type: Option<String>,
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct TelegramResponse {
-    pub method: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub chat_id: Option<i64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub message_id: Option<i64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub text: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub inline_query_id: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub results: Option<Vec<InlineQueryResult>>,
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(tag = "method", rename_all = "camelCase")]
+pub enum TelegramResponse {
+    SendMessage {
+        chat_id: i64,
+        text: String,
+    },
+    EditMessageText {
+        chat_id: i64,
+        message_id: i64,
+        text: String,
+    },
+    AnswerInlineQuery {
+        inline_query_id: String,
+        results: Vec<InlineQueryResult>,
+    },
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct InlineQueryResult {
     #[serde(rename = "type")]
     pub type_: String,
@@ -124,49 +127,37 @@ impl InlineQueryResult {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct InputMessageContent {
     pub message_text: String,
-}
-
-impl TelegramResponse {
-    pub fn send_message(chat_id: i64, text: String) -> Self {
-        Self {
-            method: "sendMessage".into(),
-            chat_id: Some(chat_id),
-            message_id: None,
-            text: Some(text),
-            inline_query_id: None,
-            results: None,
-        }
-    }
-
-    pub fn edit_message(chat_id: i64, message_id: i64, text: String) -> Self {
-        Self {
-            method: "editMessageText".into(),
-            chat_id: Some(chat_id),
-            message_id: Some(message_id),
-            text: Some(text),
-            inline_query_id: None,
-            results: None,
-        }
-    }
-
-    pub fn answer_inline_query(inline_query_id: String, result: Vec<InlineQueryResult>) -> Self {
-        Self {
-            method: "answerInlineQuery".into(),
-            chat_id: None,
-            message_id: None,
-            text: None,
-            inline_query_id: Some(inline_query_id),
-            results: Some(result),
-        }
-    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn test_response_serializes_with_method_tag() {
+        let response = TelegramResponse::SendMessage {
+            chat_id: 5,
+            text: "hi".into(),
+        };
+        assert_eq!(
+            serde_json::to_value(&response).unwrap(),
+            json!({"method": "sendMessage", "chat_id": 5, "text": "hi"})
+        );
+
+        let response = TelegramResponse::EditMessageText {
+            chat_id: 5,
+            message_id: 7,
+            text: "hi".into(),
+        };
+        assert_eq!(
+            serde_json::to_value(&response).unwrap(),
+            json!({"method": "editMessageText", "chat_id": 5, "message_id": 7, "text": "hi"})
+        );
+    }
 
     #[test]
     fn test_request_from_request_unknown() {

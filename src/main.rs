@@ -1,13 +1,6 @@
 use actix_web::{App, HttpServer};
 
-use crate::api::{receive_message, welcome};
-
-mod api;
-mod command;
-mod converter;
-mod telegram;
-mod time;
-mod utils;
+use chronosbot::api::{receive_message, welcome};
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

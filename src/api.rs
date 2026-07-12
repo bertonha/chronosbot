@@ -1,60 +1,67 @@
 use actix_web::web::Json;
 use actix_web::{Responder, get, post};
+use chrono::{DateTime, Utc};
 use chrono_tz::America::Sao_Paulo;
-use chrono_tz::CET;
+use chrono_tz::{CET, Tz};
 
 use crate::command::{convert_from_input_or_default_timezones, process_input};
 use crate::telegram::{InlineQueryResult, RequestType, TelegramRequest, TelegramResponse};
 
+const DEFAULT_INLINE_TIMEZONES: [Tz; 2] = [CET, Sao_Paulo];
+
 #[get("/")]
-async fn welcome() -> impl Responder {
+pub async fn welcome() -> impl Responder {
     "<h1>Welcome!</h1>"
 }
 
 #[post("/")]
-async fn receive_message(Json(payload): Json<TelegramRequest>) -> impl Responder {
-    let response = match RequestType::from_request(payload) {
+pub async fn receive_message(Json(payload): Json<TelegramRequest>) -> impl Responder {
+    Json(handle_update(payload, Utc::now()))
+}
+
+pub fn handle_update(payload: TelegramRequest, now: DateTime<Utc>) -> Option<TelegramResponse> {
+    match RequestType::from_request(payload) {
         RequestType::Message(message) => {
             if message.is_from_bot() {
-                return Json(None);
+                return None;
             }
-
-            match message.text {
-                Some(text) => Some(TelegramResponse::send_message(
-                    message.chat.id,
-                    process_input(&text),
-                )),
-                None => None,
-            }
+            let text = message.text?;
+            Some(TelegramResponse::SendMessage {
+                chat_id: message.chat.id,
+                text: process_input(&text, now),
+            })
         }
 
-        RequestType::EditedMessage(message) => match message.text {
-            Some(text) => Some(TelegramResponse::edit_message(
-                message.chat.id,
-                message.message_id + 1,
-                process_input(&text),
-            )),
-            None => None,
-        },
+        RequestType::EditedMessage(message) => {
+            let text = message.text?;
+            Some(TelegramResponse::EditMessageText {
+                chat_id: message.chat.id,
+                message_id: message.message_id + 1,
+                text: process_input(&text, now),
+            })
+        }
 
         RequestType::InlineQuery(inline) => {
-            match convert_from_input_or_default_timezones(inline.query.trim(), &[CET, Sao_Paulo]) {
-                Ok(converter) => {
-                    let results = converter
-                        .convert_time_between_timezones()
-                        .enumerate()
-                        .map(|(idx, time)| InlineQueryResult::article(idx.to_string(), time))
-                        .collect::<_>();
-                    Some(TelegramResponse::answer_inline_query(inline.id, results))
-                }
-                Err(_) => None,
-            }
+            let converter = convert_from_input_or_default_timezones(
+                inline.query.trim(),
+                &DEFAULT_INLINE_TIMEZONES,
+            )
+            .ok()?;
+            let results = converter
+                .convert_time_between_timezones(now)
+                .ok()?
+                .into_iter()
+                .enumerate()
+                .map(|(idx, time)| InlineQueryResult::article(idx.to_string(), time))
+                .collect();
+            Some(TelegramResponse::AnswerInlineQuery {
+                inline_query_id: inline.id,
+                results,
+            })
         }
 
         RequestType::Unknown => None,
-    };
-
-    Json(response)
+    }
 }
 
 #[cfg(test)]
@@ -107,12 +114,17 @@ mod tests {
         assert!(resp.status().is_success());
 
         let data: TelegramResponse = test::read_body_json(resp).await;
-        assert_eq!(data.chat_id, Some(123));
-        assert_eq!(data.method, "sendMessage".to_string());
-        assert_eq!(data.text, Some("Welcome!\n\nCommands accepted:\n/start\n/now <timezone>\n/convert <time> <source_timezone> <target_timezone>".into()));
+        let TelegramResponse::SendMessage { chat_id, text } = data else {
+            panic!("expected sendMessage response, got {data:?}");
+        };
+        assert_eq!(chat_id, 123);
+        assert_eq!(
+            text,
+            "Welcome!\n\nCommands accepted:\n/start\n/now <timezone>\n/convert <time> <source_timezone> <target_timezone>"
+        );
     }
 
-    #[tokio::test]
+    #[actix_web::test]
     async fn test_receive_inline_message() {
         let app = test::init_service(App::new().service(receive_message)).await;
         let req = test::TestRequest::default()
@@ -138,7 +150,9 @@ mod tests {
         assert!(resp.status().is_success());
 
         let data: TelegramResponse = test::read_body_json(resp).await;
-        assert_eq!(data.method, "answerInlineQuery".to_string());
-        assert_eq!(data.results.unwrap().len(), 2);
+        let TelegramResponse::AnswerInlineQuery { results, .. } = data else {
+            panic!("expected answerInlineQuery response, got {data:?}");
+        };
+        assert_eq!(results.len(), 2);
     }
 }
